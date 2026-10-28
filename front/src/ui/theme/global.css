@@ -1,0 +1,94 @@
+@import './sua-tokens.css';
+@import './backoffice.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--page-bg, var(--background-subtle));
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-base, 13px);
+  line-height: var(--line-base, 1.5);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--text-link);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring, var(--shadow-focus));
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 8px;
+  z-index: 100;
+  padding: 8px 12px;
+  background: var(--surface-default);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+}
+.skip-link:focus {
+  left: 8px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.numeric {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Chargement avant la coquille (session en cours) : le loader PFO centré dans la page, comme dans index.html. */
+#root > .state {
+  min-height: 100vh;
+  justify-content: center;
+}

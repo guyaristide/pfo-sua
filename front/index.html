@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="fr" data-theme="backoffice">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/brand/pfo-immobilier-bleu.svg" />
+    <title>SUA</title>
+    <style>
+      /* Chargement avant React : même loader que LoadingState, remplacé au montage. */
+      .boot {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #f7f7f3;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="boot" role="status" aria-live="polite" aria-label="Chargement en cours">
+        <img src="/brand/pfo-loader.svg" width="56" height="56" alt="" />
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

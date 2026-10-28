@@ -1,0 +1,29 @@
+{
+  "name": "pfo-sua",
+  "private": true,
+  "version": "0.1.0",
+  "description": "SUA, plateforme de Property Management de PFO Immobilier. Monorepo : front (React), backend, infra.",
+  "type": "module",
+  "workspaces": [
+    "front"
+  ],
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "dev": "npm run dev -w front",
+    "build": "npm run build -w front",
+    "test": "npm run test -w front",
+    "typecheck": "npm run typecheck -w front",
+    "format": "prettier --write \"front/src/**/*.{ts,tsx,css}\" \"front/tests/**/*.ts\""
+  },
+  "prettier": {
+    "singleQuote": true,
+    "printWidth": 110,
+    "arrowParens": "avoid"
+  },
+  "devDependencies": {
+    "prettier": "3.9.10"
+  }
+}
