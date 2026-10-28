@@ -26,3 +26,7 @@ Le front démarre sur les données simulées (`VITE_DATA_SOURCE=mock`). Pour vis
 - Règles d'ingénierie et d'interface : `/Users/neiba/workspaces/rules/front` et `/Users/neiba/workspaces/rules/backend`.
 - Dossier client (offres, cadrage, registres, maquettes, procédures) : `/Users/neiba/myspace/clients/PFO/immobilier`.
 - Maquettes validées : Elodie Wanang (CREASIKA), prototypes du 27/10/2026 et kit `@pfo/sua-ui@1.0.0`. Le front reprend l'architecture de l'information, les parcours et les tokens, avec une densité et des composants alignés sur Lightning (SLDS).
+
+## Déploiement
+
+Recette sur Coolify : `docker-compose.yml` à la racine, domaine `https://sua.poc-demo.com`, API attendue sous `/api`. Procédure dans `infra/README.md`.

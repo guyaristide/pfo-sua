@@ -18,5 +18,6 @@ export function createServices(): Services {
   const latency = Number(import.meta.env.VITE_MOCK_LATENCY_MS ?? 250);
   const sessionKey = import.meta.env.VITE_MOCK_SESSION;
   const autoSignIn = import.meta.env.VITE_MOCK_AUTO_LOGIN === 'true';
-  return createMockServices({ latencyMs: Number.isFinite(latency) ? latency : 250, autoSignIn, ...(sessionKey ? { sessionKey } : {}) });
+  const exposeLoginCode = import.meta.env.VITE_MOCK_EXPOSE_LOGIN_CODE === 'true';
+  return createMockServices({ latencyMs: Number.isFinite(latency) ? latency : 250, autoSignIn, exposeLoginCode, ...(sessionKey ? { sessionKey } : {}) });
 }

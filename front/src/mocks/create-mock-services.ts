@@ -62,6 +62,8 @@ export interface MockOptions {
   sessionKey?: string;
   /** Ouvre d'emblée la session simulée (confort de développement et captures) ; jamais par défaut. */
   autoSignIn?: boolean;
+  /** Renvoie le code de connexion simulé dans la réponse, pour l'afficher à l'écran (règle 39 : faux par défaut). */
+  exposeLoginCode?: boolean;
 }
 
 /**
@@ -199,7 +201,7 @@ export function createMockServices(options: MockOptions = {}): Services {
         if (!normalized.endsWith(`@${DEMO_DOMAIN}`)) {
           throw new AppError('validation', { userMessage: `Cette adresse n’est pas connue de SUA. Utilisez votre adresse @${DEMO_DOMAIN}.` });
         }
-        return delay({ expiresInMinutes: 10, demoCode: DEMO_CODE }, latency);
+        return delay({ expiresInMinutes: 10, demoCode: options.exposeLoginCode ? DEMO_CODE : null }, latency);
       },
       verifyCode: async (email, code) => {
         if (code.trim() !== DEMO_CODE) throw new AppError('validation', { userMessage: 'Code incorrect ou expiré. Vérifiez les six chiffres ou demandez un nouveau code.' });

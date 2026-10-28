@@ -1,0 +1,77 @@
+# SUA · recette (QA) sur Coolify.
+# Coolify lit ce fichier (« Docker Compose » à la racine du dépôt), construit les images et pose
+# Traefik et le TLS devant le service qui porte le domaine : https://sua.poc-demo.com.
+# L'API, quand elle existera, répond derrière le même domaine sous /api (relais nginx du front).
+
+services:
+  front:
+    build:
+      context: .
+      dockerfile: infra/docker/front.Dockerfile
+      args:
+        # Sans API : données simulées. Avec l'API : VITE_DATA_SOURCE=http et VITE_API_BASE_URL=/api.
+        VITE_DATA_SOURCE: ${VITE_DATA_SOURCE:-mock}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+        VITE_MOCK_LATENCY_MS: ${VITE_MOCK_LATENCY_MS:-250}
+        VITE_MOCK_SESSION: ${VITE_MOCK_SESSION:-pmLead}
+        # Jamais vrai en recette : l'écran de connexion fait partie de ce qui se recette.
+        VITE_MOCK_AUTO_LOGIN: ${VITE_MOCK_AUTO_LOGIN:-false}
+        # Montre le code de connexion simulé à l'écran (règle 39 : le drapeau dit ce qu'il ouvre).
+        # Vrai seulement tant que la recette tourne sur données simulées, sans serveur d'e-mail.
+        VITE_MOCK_EXPOSE_LOGIN_CODE: ${VITE_MOCK_EXPOSE_LOGIN_CODE:-false}
+    environment:
+      API_UPSTREAM: ${API_UPSTREAM:-http://api:8080}
+    expose:
+      - "80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    labels:
+      - coolify.managed=true
+
+  # ------------------------------------------------------------------------------------------
+  # API Quarkus et PostgreSQL : en commentaire tant que le backend et `infra/docker/api.Dockerfile`
+  # n'existent pas, pour que Coolify ne tente rien de plus que le front. À décommenter avec le
+  # backend, puis COMPOSE_PROFILES=api et POSTGRES_PASSWORD dans Coolify.
+  # ------------------------------------------------------------------------------------------
+  #   api:
+  #     profiles: ["api"]
+  #     build:
+  #       context: .
+  #       dockerfile: infra/docker/api.Dockerfile
+  #     environment:
+  #       QUARKUS_HTTP_PORT: "8080"
+  #       QUARKUS_HTTP_ROOT_PATH: /api
+  #       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://db:5432/sua
+  #       QUARKUS_DATASOURCE_USERNAME: ${POSTGRES_USER:-sua}
+  #       # Fourni par Coolify avec le profil « api » ; vide, PostgreSQL refuse de démarrer, ce qui est voulu.
+  #       QUARKUS_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-}
+  #     expose:
+  #       - "8080"
+  #     depends_on:
+  #       db:
+  #         condition: service_healthy
+  #     restart: unless-stopped
+  #
+  #   db:
+  #     profiles: ["api"]
+  #     image: pgvector/pgvector:pg16
+  #     environment:
+  #       POSTGRES_DB: sua
+  #       POSTGRES_USER: ${POSTGRES_USER:-sua}
+  #       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+  #     volumes:
+  #       - sua-db:/var/lib/postgresql/data
+  #     healthcheck:
+  #       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sua} -d sua"]
+  #       interval: 10s
+  #       timeout: 5s
+  #       retries: 10
+  #     restart: unless-stopped
+
+# volumes:
+#   sua-db:

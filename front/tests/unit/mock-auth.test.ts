@@ -8,7 +8,7 @@ beforeEach(() => sessionStore.setToken(null));
 
 describe('authentification simulée', () => {
   it('refuse la session sans jeton, puis l’ouvre après le bon code, pour la bonne personne', async () => {
-    const services = createMockServices({ latencyMs: 0 });
+    const services = createMockServices({ latencyMs: 0, exposeLoginCode: true });
     const closed = await services.session.getSession().catch(e => e as AppError);
     expect((closed as AppError).kind).toBe('unauthorized');
 
@@ -16,6 +16,8 @@ describe('authentification simulée', () => {
     expect((unknown as AppError).kind).toBe('validation');
     const request = await services.auth.requestCode('v.chapoutot@pfo-immobilier.ci');
     expect(request.demoCode).toBeTruthy();
+    const silent = createMockServices({ latencyMs: 0 });
+    expect((await silent.auth.requestCode('v.chapoutot@pfo-immobilier.ci')).demoCode).toBeNull();
 
     const wrong = await services.auth.verifyCode('v.chapoutot@pfo-immobilier.ci', '000000').catch(e => e as AppError);
     expect((wrong as AppError).kind).toBe('validation');
