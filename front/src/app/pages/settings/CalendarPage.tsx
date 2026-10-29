@@ -3,7 +3,7 @@ import { useParams } from 'react-router';
 import type { CalendarRule } from '@/services/contracts';
 import { useListCalendarRules } from '@/services/hooks/use-list-calendar-rules';
 import { useSaveCalendarRule } from '@/services/hooks/use-save-calendar-rule';
-import { AppError } from '@/shared/errors';
+import { errorMessage } from '@/shared/errors';
 import { t } from '@/i18n/t';
 import { CalendarRuleFormScreen, CalendarScreen, calendarRuleToForm, toCalendarRuleInput, type CalendarRuleForm } from '@/ui/screens/settings/CalendarScreen';
 import { Button, EmptyState } from '@/ui/primitives';
@@ -56,7 +56,6 @@ function CalendarRuleFormBody({ rule }: { rule: CalendarRule }) {
   const [initial] = useState(() => calendarRuleToForm(rule));
   const draft = useDraft<CalendarRuleForm>(`settings.calendar.${rule.id}`, initial);
   const mutation = useSaveCalendarRule(rule.id);
-  const error = mutation.isError ? AppError.from(mutation.error) : null;
   return (
     <CalendarRuleFormScreen
       rule={rule}
@@ -64,7 +63,7 @@ function CalendarRuleFormBody({ rule }: { rule: CalendarRule }) {
       form={draft.value}
       onChange={draft.setValue}
       submitting={mutation.isPending}
-      submitError={error ? (error.userMessage ?? t('state.error.body', { reference: error.reference })) : undefined}
+      submitError={mutation.isError ? errorMessage(mutation.error) : undefined}
       onSubmit={() =>
         mutation.mutate(toCalendarRuleInput(draft.value, rule.frequency), {
           onSuccess: () => {

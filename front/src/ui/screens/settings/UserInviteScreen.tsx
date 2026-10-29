@@ -1,6 +1,7 @@
 import type { AssetSummary, RoleKey, UserInvitation } from '@/services/contracts';
 import { roleKeys, roleLabelKey } from '@/shared/roles';
 import { t } from '@/i18n/t';
+import { isEmail } from '@/shared/validation';
 import { Card, CheckboxField, Field, FormPage, RadioField, SelectInput, TextInput , useFormAttempted , issuesFrom } from '@/ui/primitives';
 import { settingsCrumbs, type SettingsNavigation } from './crumbs';
 
@@ -22,7 +23,7 @@ export function validateUserInvite(form: UserInviteForm): Errors {
   if (!form.firstName.trim()) errors.firstName = t('form.required');
   if (!form.lastName.trim()) errors.lastName = t('form.required');
   if (!form.email.trim()) errors.email = t('form.required');
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = t('users.field.email.invalid');
+  else if (!isEmail(form.email)) errors.email = t('form.email.invalid');
   if (!form.role) errors.role = t('form.required');
   if (form.scopeMode === 'some' && form.scopeAssets.length === 0) errors.scopeAssets = t('users.field.scope.pick');
   return errors;
@@ -96,7 +97,7 @@ export function UserInviteScreen({ assets, form, onChange, onSubmit, submitting,
           <RadioField id="scope-all" name="scope" label={t('users.field.scope.all')} checked={form.scopeMode === 'all'} onChange={() => set({ scopeMode: 'all' })} />
           <RadioField id="scope-some" name="scope" label={t('users.field.scope.some')} checked={form.scopeMode === 'some'} onChange={() => set({ scopeMode: 'some' })} />
           {form.scopeMode === 'some' ? (
-            <div className="checkbox-group" style={{ paddingLeft: 24 }}>
+            <div className="checkbox-group checkbox-group--nested">
               {assets.map(asset => (
                 <CheckboxField key={asset.id} id={`scope-${asset.id}`} label={asset.name} checked={form.scopeAssets.includes(asset.name)} onChange={checked => toggleAsset(asset.name, checked)} />
               ))}

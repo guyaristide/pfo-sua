@@ -3,7 +3,7 @@ import type { AssetSummary, BankAccount } from '@/services/contracts';
 import { useListAssets } from '@/services/hooks/use-list-assets';
 import { useListBankAccounts } from '@/services/hooks/use-list-bank-accounts';
 import { useSaveBankAccount } from '@/services/hooks/use-save-bank-account';
-import { AppError } from '@/shared/errors';
+import { errorMessage } from '@/shared/errors';
 import { t } from '@/i18n/t';
 import {
   BankAccountFormScreen,
@@ -76,7 +76,6 @@ function BankAccountFormBody({ account, assets }: { account: BankAccount | null;
   const toast = useToast();
   const draft = useDraft<BankAccountForm>(`settings.bank-account.${account?.id ?? 'new'}`, account ? bankAccountToForm(account) : emptyBankAccountForm);
   const mutation = useSaveBankAccount(account?.id);
-  const error = mutation.isError ? AppError.from(mutation.error) : null;
   return (
     <BankAccountFormScreen
       editing={account !== null}
@@ -84,7 +83,7 @@ function BankAccountFormBody({ account, assets }: { account: BankAccount | null;
       form={draft.value}
       onChange={draft.setValue}
       submitting={mutation.isPending}
-      submitError={error ? (error.userMessage ?? t('state.error.body', { reference: error.reference })) : undefined}
+      submitError={mutation.isError ? errorMessage(mutation.error) : undefined}
       onSubmit={() =>
         mutation.mutate(toBankAccountInput(draft.value), {
           onSuccess: () => {

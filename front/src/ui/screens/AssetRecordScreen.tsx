@@ -1,19 +1,10 @@
 import { useState } from 'react';
-import type { AssetRecord, LotRow, LotType, TenantRow } from '@/services/contracts';
+import type { AssetRecord, LotRow, TenantRow } from '@/services/contracts';
 import type { Formatters } from '@/shared/format/formatters';
-import type { MessageKey } from '@/i18n/fr';
 import { lotStatus, tenantStatus } from '@/shared/status';
+import { lotTypeKey } from '@/shared/labels';
 import { t } from '@/i18n/t';
-import { Badge, Button, Card, DataTable, EmptyState, ListStatus, PageHeader, ShowMore, Tabs, useListFilter, type Column, type TabDefinition } from '@/ui/primitives';
-
-export const lotTypeKey: Record<LotType, MessageKey> = {
-  offices: 'lot.type.offices',
-  shops: 'lot.type.shops',
-  villas: 'lot.type.villas',
-  apartments: 'lot.type.apartments',
-  land: 'lot.type.land',
-  parking: 'lot.type.parking',
-};
+import { Badge, Button, Card, EmptyState, FieldGrid, ListBody, PageHeader, RecordLink, Tabs, type Column, type TabDefinition } from '@/ui/primitives';
 
 type Tab = 'lots' | 'tenants' | 'details';
 
@@ -40,7 +31,7 @@ export function AssetRecordScreen({ asset, fmt, canWrite, onBack, onAddTenant, o
       <PageHeader
         object="asset"
         breadcrumbs={[{ label: t('nav.assets'), onClick: onBack }]}
-        eyebrow={`${t('nav.assets')} · ${asset.code}`}
+        eyebrow={`${asset.code} · ${t('asset.record.subtitle', { location: asset.location, buildings: asset.buildingCount, lots: asset.lotCount })}`}
         title={asset.name}
         actions={
           canWrite ? (
@@ -61,10 +52,9 @@ export function AssetRecordScreen({ asset, fmt, canWrite, onBack, onAddTenant, o
           { label: t('asset.record.unpaid'), value: fmt.money(asset.unpaidAmount) },
         ]}
       />
-      <p className="card__meta">{t('asset.record.subtitle', { location: asset.location, buildings: asset.buildingCount, lots: asset.lotCount })}</p>
       <Tabs tabs={tabs} current={tab} onChange={setTab} label={asset.name}>
         {tab === 'lots' ? <LotsTab lots={asset.lots} fmt={fmt} /> : null}
-        {tab === 'tenants' ? <TenantsTab tenants={asset.tenants} fmt={fmt} onOpenTenant={onOpenTenant} /> : null}
+        {tab === 'tenants' ? <TenantsTab tenants={asset.tenants} fmt={fmt} onOpenTenant={onOpenTenant} onAddTenant={canWrite ? onAddTenant : undefined} /> : null}
         {tab === 'details' ? <DetailsTab asset={asset} fmt={fmt} /> : null}
       </Tabs>
     </>
@@ -72,13 +62,11 @@ export function AssetRecordScreen({ asset, fmt, canWrite, onBack, onAddTenant, o
 }
 
 function LotsTab({ lots, fmt }: { lots: LotRow[]; fmt: Formatters }) {
-  const list = useListFilter(lots, lot => [lot.code, lot.building, lot.tenantName]);
-  const occupied = list.filtered.filter(lot => lot.status === 'occupied').length;
   const columns: Column<LotRow>[] = [
-    { key: 'lot', header: t('asset.record.lots.col.lot'), render: lot => <span className="table__primary">{lot.code}</span> },
-    { key: 'building', header: t('asset.record.lots.col.building'), render: lot => lot.building },
+    { key: 'lot', header: t('asset.record.lots.col.lot'), render: lot => <span className="table__strong">{lot.code}</span>, sortValue: lot => lot.code },
+    { key: 'building', header: t('asset.record.lots.col.building'), render: lot => lot.building, sortValue: lot => lot.building },
     { key: 'type', header: t('asset.record.lots.col.type'), render: lot => t(lotTypeKey[lot.type]) },
-    { key: 'surface', header: t('asset.record.lots.col.surface'), numeric: true, render: lot => t('asset.record.lots.surface', { surface: lot.surface }) },
+    { key: 'surface', header: t('asset.record.lots.col.surface'), numeric: true, render: lot => t('asset.record.lots.surface', { surface: fmt.number(lot.surface) }), sortValue: lot => lot.surface },
     { key: 'floor', header: t('asset.record.lots.col.floor'), render: lot => lot.floor ?? '' },
     {
       key: 'tenant',
@@ -90,43 +78,34 @@ function LotsTab({ lots, fmt }: { lots: LotRow[]; fmt: Formatters }) {
         </div>
       ),
     },
-    { key: 'rent', header: t('asset.record.lots.col.rent'), numeric: true, render: lot => (lot.monthlyRent === null ? '' : fmt.moneyPlain(lot.monthlyRent)) },
+    { key: 'rent', header: t('asset.record.lots.col.rent'), numeric: true, render: lot => (lot.monthlyRent === null ? '' : fmt.moneyPlain(lot.monthlyRent)), sortValue: lot => lot.monthlyRent },
   ];
-  const totalSurface = list.filtered.reduce((sum, lot) => sum + lot.surface, 0);
-  const totalRent = list.filtered.reduce((sum, lot) => sum + (lot.monthlyRent ?? 0), 0);
   return (
     <Card flush>
-      <ListStatus
-        count={list.filtered.length}
-        extra={t('asset.record.lots.count', { occupied, vacant: list.filtered.length - occupied })}
-        search={list.search}
-        onSearch={list.setSearch}
+      <ListBody
+        rows={lots}
+        haystack={lot => [lot.code, lot.building, lot.tenantName]}
+        columns={columns}
+        rowKey={lot => lot.id}
+        caption={t('asset.record.tab.lots')}
+        highlight={lot => lot.status === 'vacant'}
+        extra={rows => t('asset.record.lots.count', { occupied: rows.filter(lot => lot.status === 'occupied').length, vacant: rows.filter(lot => lot.status !== 'occupied').length })}
+        footer={rows => [t('asset.record.lots.total', { count: rows.length }), '', '', t('asset.record.lots.surface', { surface: fmt.number(rows.reduce((sum, lot) => sum + lot.surface, 0)) }), '', '', fmt.moneyPlain(rows.reduce((sum, lot) => sum + (lot.monthlyRent ?? 0), 0))]}
+        empty={<EmptyState icon="building" title={t('asset.record.lots.empty')} />}
       />
-      {list.filtered.length === 0 ? (
-        <EmptyState icon="building" title={t('asset.record.lots.empty')} />
-      ) : (
-        <DataTable
-          caption={t('asset.record.tab.lots')}
-          columns={columns}
-          rows={list.visible}
-          rowKey={lot => lot.id}
-          footer={[t('asset.record.lots.total', { count: list.filtered.length }), '', '', t('asset.record.lots.surface', { surface: totalSurface }), '', '', fmt.moneyPlain(totalRent)]}
-        />
-      )}
-      <ShowMore hidden={list.hidden} onClick={list.showMore} />
     </Card>
   );
 }
 
-function TenantsTab({ tenants, fmt, onOpenTenant }: { tenants: TenantRow[]; fmt: Formatters; onOpenTenant: (tenantId: string) => void }) {
-  const list = useListFilter(tenants, tenant => [tenant.name, tenant.contactName, ...tenant.lotCodes]);
+function TenantsTab({ tenants, fmt, onOpenTenant, onAddTenant }: { tenants: TenantRow[]; fmt: Formatters; onOpenTenant: (tenantId: string) => void; onAddTenant: (() => void) | undefined }) {
   const columns: Column<TenantRow>[] = [
     {
       key: 'tenant',
       header: t('asset.record.tenants.col.tenant'),
+      sortValue: tenant => tenant.name,
       render: tenant => (
         <div>
-          <div className="table__primary">{tenant.name}</div>
+          <RecordLink onClick={() => onOpenTenant(tenant.id)}>{tenant.name}</RecordLink>
           <div className="table__secondary">
             {tenant.contactName} · {tenant.email}
           </div>
@@ -144,78 +123,61 @@ function TenantsTab({ tenants, fmt, onOpenTenant }: { tenants: TenantRow[]; fmt:
     },
     { key: 'rent', header: t('asset.record.tenants.col.rent'), numeric: true, render: tenant => fmt.moneyPlain(tenant.monthlyRent) },
     { key: 'charges', header: t('asset.record.tenants.col.charges'), numeric: true, render: tenant => fmt.moneyPlain(tenant.monthlyCharges) },
-    { key: 'balance', header: t('asset.record.tenants.col.balance'), numeric: true, render: tenant => fmt.moneyPlain(tenant.balance) },
+    { key: 'balance', header: t('asset.record.tenants.col.balance'), numeric: true, render: tenant => fmt.moneyPlain(tenant.balance), sortValue: tenant => tenant.balance },
     { key: 'status', header: t('asset.record.tenants.col.status'), render: tenant => <Badge tone={tenantStatus[tenant.status].tone}>{t(tenantStatus[tenant.status].labelKey)}</Badge> },
-    {
-      key: 'actions',
-      header: '',
-      render: tenant => (
-        <div className="table__actions">
-          <Button variant="neutral" onClick={() => onOpenTenant(tenant.id)}>
-            {t('asset.record.tenants.open')}
-          </Button>
-        </div>
-      ),
-    },
   ];
-  const totalRent = list.filtered.reduce((sum, tenant) => sum + tenant.monthlyRent, 0);
-  const totalCharges = list.filtered.reduce((sum, tenant) => sum + tenant.monthlyCharges, 0);
-  const totalBalance = list.filtered.reduce((sum, tenant) => sum + tenant.balance, 0);
+  const sum = (rows: TenantRow[], pick: (tenant: TenantRow) => number) => rows.reduce((total, tenant) => total + pick(tenant), 0);
   return (
     <Card flush>
-      <ListStatus count={list.filtered.length} search={list.search} onSearch={list.setSearch} />
-      {list.filtered.length === 0 ? (
-        <EmptyState icon="users" title={t('asset.record.tenants.empty.title')} body={t('asset.record.tenants.empty.body')} trame />
-      ) : (
-        <DataTable
-          caption={t('asset.record.tab.tenants')}
-          columns={columns}
-          rows={list.visible}
-          rowKey={tenant => tenant.id}
-          footer={[t('asset.record.tenants.total', { count: list.filtered.length }), '', '', fmt.moneyPlain(totalRent), fmt.moneyPlain(totalCharges), fmt.moneyPlain(totalBalance), '', '']}
-        />
-      )}
-      <ShowMore hidden={list.hidden} onClick={list.showMore} />
+      <ListBody
+        rows={tenants}
+        haystack={tenant => [tenant.name, tenant.contactName, ...tenant.lotCodes]}
+        columns={columns}
+        rowKey={tenant => tenant.id}
+        caption={t('asset.record.tab.tenants')}
+        rowActions={tenant => [{ label: t('asset.record.tenants.open'), onSelect: () => onOpenTenant(tenant.id) }]}
+        highlight={tenant => tenant.balance < 0}
+        footer={rows => [t('asset.record.tenants.total', { count: rows.length }), '', '', fmt.moneyPlain(sum(rows, r => r.monthlyRent)), fmt.moneyPlain(sum(rows, r => r.monthlyCharges)), fmt.moneyPlain(sum(rows, r => r.balance)), '']}
+        empty={<EmptyState icon="users" title={t('asset.record.tenants.empty.title')} body={t('asset.record.tenants.empty.body')} trame action={onAddTenant ? <Button variant="neutral" onClick={onAddTenant}>{t('asset.record.action.addTenant')}</Button> : null} />}
+      />
     </Card>
   );
 }
 
 function DetailsTab({ asset, fmt }: { asset: AssetRecord; fmt: Formatters }) {
   return (
-    <div className="layout-two">
+    <div className="section-grid">
       <Card title={t('asset.record.details.owner')}>
-        <dl className="summary-list">
-          <dt>{t('asset.record.details.owner')}</dt>
-          <dd>{asset.owner.name}</dd>
-          <dt>{t('asset.record.details.registration')}</dt>
-          <dd>{asset.owner.registration}</dd>
-          <dt>{t('asset.record.details.address')}</dt>
-          <dd>{asset.owner.address}</dd>
-          <dt>{t('asset.record.details.representative')}</dt>
-          <dd>{asset.owner.representative}</dd>
-        </dl>
+        <FieldGrid
+          columns={1}
+          fields={[
+            { label: t('asset.record.details.owner'), value: asset.owner.name },
+            { label: t('asset.record.details.registration'), value: asset.owner.registration },
+            { label: t('asset.record.details.address'), value: asset.owner.address },
+            { label: t('asset.record.details.representative'), value: asset.owner.representative },
+          ]}
+        />
       </Card>
       <Card title={t('asset.record.details.mandate')}>
-        <dl className="summary-list">
-          <dt>{t('asset.record.details.mandate.reference')}</dt>
-          <dd>{asset.mandate.reference}</dd>
-          <dt>{t('asset.record.details.mandate.signedOn')}</dt>
-          <dd>{fmt.shortDate(asset.mandate.signedOn)}</dd>
-          <dt>{t('asset.record.details.mandate.duration')}</dt>
-          <dd>{t('asset.record.details.mandate.years', { years: asset.mandate.durationYears })}</dd>
-          <dt>{t('asset.record.details.mandate.endsOn')}</dt>
-          <dd>{fmt.shortDate(asset.mandate.endsOn)}</dd>
-        </dl>
+        <FieldGrid
+          columns={1}
+          fields={[
+            { label: t('asset.record.details.mandate.reference'), value: asset.mandate.reference },
+            { label: t('asset.record.details.mandate.signedOn'), value: fmt.shortDate(asset.mandate.signedOn) },
+            { label: t('asset.record.details.mandate.duration'), value: t('asset.record.details.mandate.years', { years: asset.mandate.durationYears }) },
+            { label: t('asset.record.details.mandate.endsOn'), value: fmt.shortDate(asset.mandate.endsOn) },
+          ]}
+        />
       </Card>
       <Card title={t('asset.record.details.specifics')}>
-        <dl className="summary-list">
-          <dt>{t('asset.record.details.rentAccount')}</dt>
-          <dd>{asset.rentAccountLabel ?? ''}</dd>
-          <dt>{t('asset.record.details.expenses')}</dt>
-          <dd>{asset.expensesPaidBy === 'sci' ? t('asset.record.details.expenses.sci') : t('asset.record.details.expenses.pfo')}</dd>
-          <dt>{t('asset.record.details.billingItems')}</dt>
-          <dd>{asset.billingItemCodes.join(', ')}</dd>
-        </dl>
+        <FieldGrid
+          columns={1}
+          fields={[
+            { label: t('asset.record.details.rentAccount'), value: asset.rentAccountLabel ?? '' },
+            { label: t('asset.record.details.expenses'), value: asset.expensesPaidBy === 'sci' ? t('asset.record.details.expenses.sci') : t('asset.record.details.expenses.pfo') },
+            { label: t('asset.record.details.billingItems'), value: asset.billingItemCodes.join(', ') },
+          ]}
+        />
       </Card>
     </div>
   );

@@ -8,28 +8,13 @@ import { useListTenants } from '@/services/hooks/use-list-tenants';
 import { useServices } from '@/services/service-context';
 import { usePermission } from '@/shared/auth/use-permission';
 import { PERMISSIONS } from '@/shared/auth/permissions';
-import { AppError } from '@/shared/errors';
+import { errorMessage } from '@/shared/errors';
 import { t } from '@/i18n/t';
+import { saveBlob } from '@/shared/export/save-file';
 import { DocumentScreen, UploadDocumentScreen, emptyUploadForm, toUploadInput, type UploadForm } from '@/ui/screens/documents/DocumentScreen';
 import { QueryState } from '../../query-state';
 import { useFormatters } from '../../use-formatters';
 import { useToast } from '../../toast-context';
-
-const message = (error: unknown) => {
-  const appError = AppError.from(error);
-  return appError.userMessage ?? t('state.error.body', { reference: appError.reference });
-};
-
-function saveBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
-}
 
 export function DocumentPage() {
   const { documentId = '' } = useParams();
@@ -50,7 +35,7 @@ export function DocumentPage() {
             void documents
               .download(doc.id)
               .then(blob => saveBlob(blob, `${doc.name}.${doc.formatLabel.toLowerCase()}`))
-              .catch(error => toast.notify({ tone: 'danger', title: message(error) }))
+              .catch(error => toast.notify({ tone: 'danger', title: errorMessage(error) }))
           }
           onNewVersion={() => void navigate(`/documents/${encodeURIComponent(doc.id)}/version`)}
           onOpenAsset={() => void navigate(`/assets/${encodeURIComponent(doc.assetId ?? '')}`)}
@@ -98,7 +83,7 @@ function UploadBody({ replacing, assets, tenants }: { replacing: DocumentDetail 
         })
       }
       submitting={mutation.isPending}
-      submitError={mutation.isError ? message(mutation.error) : undefined}
+      submitError={mutation.isError ? errorMessage(mutation.error) : undefined}
       onCancel={back}
       onBack={() => void navigate('/documents')}
     />

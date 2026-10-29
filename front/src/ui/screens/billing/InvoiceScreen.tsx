@@ -4,9 +4,30 @@ import type { MessageKey } from '@/i18n/fr';
 import { invoiceStatus } from '@/shared/status';
 import { exportCsv } from '@/shared/export/csv';
 import { t } from '@/i18n/t';
-import { Badge, Button, Card, DataTable, Field, FormPage, PageHeader, Path, SelectInput, TextInput, type Column, type PathStep , issuesFrom } from '@/ui/primitives';
+import {
+  Badge,
+  Button,
+  Card,
+  DataTable,
+  Field,
+  FormPage,
+  PageHeader,
+  Path,
+  RecordLayout,
+  SelectInput,
+  Stack,
+  TextInput,
+  Timeline,
+  issuesFrom,
+  type Column,
+  type PathStep,
+} from '@/ui/primitives';
 
-export const deliveryModeKey: Record<DeliveryMode, MessageKey> = { deposit: 'invoice.delivery.mode.deposit', email: 'invoice.delivery.mode.email', courier: 'invoice.delivery.mode.courier' };
+export const deliveryModeKey: Record<DeliveryMode, MessageKey> = {
+  deposit: 'invoice.delivery.mode.deposit',
+  email: 'invoice.delivery.mode.email',
+  courier: 'invoice.delivery.mode.courier',
+};
 type InvoiceStep = 'draft' | 'to-check' | 'issued' | 'delivered' | 'paid';
 const pathSteps: InvoiceStep[] = ['draft', 'to-check', 'issued', 'delivered', 'paid'];
 
@@ -21,13 +42,27 @@ interface InvoiceScreenProps {
   onBack: () => void;
 }
 
-export function InvoiceScreen({ invoice, fmt, canIssue, onCheck, checking, onDelivery, onOpenTenant, onBack }: InvoiceScreenProps) {
+export function InvoiceScreen({
+  invoice,
+  fmt,
+  canIssue,
+  onCheck,
+  checking,
+  onDelivery,
+  onOpenTenant,
+  onBack,
+}: InvoiceScreenProps) {
   const period = fmt.monthYear(invoice.periodStart);
   const current: InvoiceStep = invoice.status === 'partially-paid' ? 'delivered' : invoice.status;
   const steps: PathStep<InvoiceStep>[] = pathSteps.map(key => ({ key, label: t(`invoice.step.${key}`) }));
   const columns: Column<InvoiceDetail['lines'][number]>[] = [
     { key: 'label', header: t('invoice.lines.col.label'), render: line => line.label },
-    { key: 'amount', header: t('invoice.lines.col.amount'), numeric: true, render: line => fmt.moneyPlain(line.amount) },
+    {
+      key: 'amount',
+      header: t('invoice.lines.col.amount'),
+      numeric: true,
+      render: line => fmt.moneyPlain(line.amount),
+    },
   ];
   const canCheck = canIssue && (invoice.status === 'to-check' || invoice.status === 'draft');
   const canDeliver = canIssue && invoice.status === 'issued';
@@ -44,7 +79,16 @@ export function InvoiceScreen({ invoice, fmt, canIssue, onCheck, checking, onDel
             <Button
               variant="neutral"
               iconLeading="download"
-              onClick={() => exportCsv(`facture-${invoice.id}`, [{ header: t('invoice.lines.col.label'), value: l => l.label }, { header: t('invoice.lines.col.amount'), value: l => l.amount }], invoice.lines)}
+              onClick={() =>
+                exportCsv(
+                  `facture-${invoice.id}`,
+                  [
+                    { header: t('invoice.lines.col.label'), value: l => l.label },
+                    { header: t('invoice.lines.col.amount'), value: l => l.amount },
+                  ],
+                  invoice.lines,
+                )
+              }
             >
               {t('invoice.action.export')}
             </Button>
@@ -69,43 +113,60 @@ export function InvoiceScreen({ invoice, fmt, canIssue, onCheck, checking, onDel
           { label: t('invoice.highlight.tenant'), value: invoice.tenantName },
           { label: t('invoice.highlight.amount'), value: fmt.money(invoice.amount) },
           { label: t('invoice.highlight.due'), value: fmt.shortDate(invoice.dueDate) },
-          { label: t('invoice.highlight.paid'), value: <Badge tone={invoiceStatus[invoice.status].tone}>{`${t(invoiceStatus[invoice.status].labelKey)} · ${fmt.money(invoice.paidAmount)}`}</Badge> },
+          {
+            label: t('invoice.highlight.paid'),
+            value: (
+              <Badge
+                tone={invoiceStatus[invoice.status].tone}
+              >{`${t(invoiceStatus[invoice.status].labelKey)} · ${fmt.money(invoice.paidAmount)}`}</Badge>
+            ),
+          },
         ]}
       />
-      <div className="layout-two">
-        <Card title={t('invoice.lines.title')} flush>
-          <DataTable caption={t('invoice.lines.title')} columns={columns} rows={invoice.lines} rowKey={line => line.label} footer={[t('invoice.lines.total'), fmt.moneyPlain(invoice.amount)]} />
-          <div className="card__footer card__meta">
-            {t('invoice.lines.vat')} {fmt.moneyPlain(invoice.vatAmount)}
-          </div>
-        </Card>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Card title={t('invoice.delivery.title')}>
-            {invoice.deliveredOn && invoice.deliveryMode ? (
-              <p>{t('invoice.delivery.on', { date: fmt.shortDate(invoice.deliveredOn), mode: t(deliveryModeKey[invoice.deliveryMode]), proof: invoice.deliveryProof ?? '' })}</p>
-            ) : (
-              <p className="card__meta">{t('invoice.delivery.none')}</p>
-            )}
+      <RecordLayout
+        main={
+          <Card title={t('invoice.lines.title')} flush>
+            <DataTable
+              caption={t('invoice.lines.title')}
+              columns={columns}
+              rows={invoice.lines}
+              rowKey={line => line.label}
+              footer={[t('invoice.lines.total'), fmt.moneyPlain(invoice.amount)]}
+            />
+            <div className="card__footer card__meta">
+              {t('invoice.lines.vat')} {fmt.moneyPlain(invoice.vatAmount)}
+            </div>
           </Card>
-          <Card title={t('invoice.history.title')} flush>
-            {invoice.history.map(event => {
-              const { day, month } = fmt.dayMonth(event.date);
-              return (
-                <div className="timeline-item" key={event.id}>
-                  <div>
-                    <div className="timeline-item__day">{day}</div>
-                    <div className="timeline-item__month">{month}</div>
-                  </div>
-                  <div>
-                    <div className="timeline-item__title">{event.label}</div>
-                    {event.amount !== null ? <div className="timeline-item__detail">{fmt.money(event.amount)}</div> : null}
-                  </div>
-                </div>
-              );
-            })}
-          </Card>
-        </div>
-      </div>
+        }
+        aside={
+          <Stack>
+            <Card title={t('invoice.delivery.title')}>
+              {invoice.deliveredOn && invoice.deliveryMode ? (
+                <p>
+                  {t('invoice.delivery.on', {
+                    date: fmt.shortDate(invoice.deliveredOn),
+                    mode: t(deliveryModeKey[invoice.deliveryMode]),
+                    proof: invoice.deliveryProof ?? '',
+                  })}
+                </p>
+              ) : (
+                <p className="card__meta">{t('invoice.delivery.none')}</p>
+              )}
+            </Card>
+            <Card title={t('invoice.history.title')} flush>
+              <Timeline
+                fmt={fmt}
+                items={invoice.history.map(event => ({
+                  id: event.id,
+                  date: event.date,
+                  title: event.label,
+                  detail: event.amount !== null ? fmt.money(event.amount) : undefined,
+                }))}
+              />
+            </Card>
+          </Stack>
+        }
+      />
     </>
   );
 }
@@ -139,17 +200,34 @@ interface DeliveryScreenProps {
   onBack: () => void;
 }
 
-export function InvoiceDeliveryScreen({ invoice, fmt, form, onChange, onSubmit, submitting, submitError, onCancel, onBack }: DeliveryScreenProps) {
+export function InvoiceDeliveryScreen({
+  invoice,
+  fmt,
+  form,
+  onChange,
+  onSubmit,
+  submitting,
+  submitError,
+  onCancel,
+  onBack,
+}: DeliveryScreenProps) {
   const errors = validateDelivery(form);
   const set = (changes: Partial<DeliveryForm>) => onChange({ ...form, ...changes });
   return (
     <FormPage
       object="invoice"
-      breadcrumbs={[{ label: t('nav.billing'), onClick: onBack }, { label: t('invoice.title', { period: fmt.monthYear(invoice.periodStart) }), onClick: onCancel }]}
+      breadcrumbs={[
+        { label: t('nav.billing'), onClick: onBack },
+        { label: t('invoice.title', { period: fmt.monthYear(invoice.periodStart) }), onClick: onCancel },
+      ]}
       eyebrow={`${invoice.tenantName} · ${fmt.money(invoice.amount)}`}
       title={t('invoice.deliveryForm.title')}
       errorCount={Object.keys(errors).length}
-      issues={issuesFrom(errors, key => `dlv-${key}`, key => t(key === 'date' ? 'invoice.deliveryForm.date' : 'invoice.deliveryForm.proof'))}
+      issues={issuesFrom(
+        errors,
+        key => `dlv-${key}`,
+        key => t(key === 'date' ? 'invoice.deliveryForm.date' : 'invoice.deliveryForm.proof'),
+      )}
       submitError={submitError}
       submitting={submitting}
       onCancel={onCancel}
@@ -158,10 +236,20 @@ export function InvoiceDeliveryScreen({ invoice, fmt, form, onChange, onSubmit, 
       <Card>
         <div className="form-grid">
           <Field id="dlv-date" label={t('invoice.deliveryForm.date')} required error={errors.date}>
-            <TextInput id="dlv-date" type="date" value={form.date} invalid={!!errors.date} onChange={e => set({ date: e.target.value })} />
+            <TextInput
+              id="dlv-date"
+              type="date"
+              value={form.date}
+              invalid={!!errors.date}
+              onChange={e => set({ date: e.target.value })}
+            />
           </Field>
           <Field id="dlv-mode" label={t('invoice.deliveryForm.mode')} required>
-            <SelectInput id="dlv-mode" value={form.mode} onChange={e => set({ mode: e.target.value as DeliveryMode })}>
+            <SelectInput
+              id="dlv-mode"
+              value={form.mode}
+              onChange={e => set({ mode: e.target.value as DeliveryMode })}
+            >
               {(Object.keys(deliveryModeKey) as DeliveryMode[]).map(mode => (
                 <option key={mode} value={mode}>
                   {t(deliveryModeKey[mode])}
@@ -169,8 +257,19 @@ export function InvoiceDeliveryScreen({ invoice, fmt, form, onChange, onSubmit, 
               ))}
             </SelectInput>
           </Field>
-          <Field id="dlv-proof" label={t('invoice.deliveryForm.proof')} required error={errors.proof} help={t('invoice.deliveryForm.proof.help')}>
-            <TextInput id="dlv-proof" value={form.proof} invalid={!!errors.proof} onChange={e => set({ proof: e.target.value })} />
+          <Field
+            id="dlv-proof"
+            label={t('invoice.deliveryForm.proof')}
+            required
+            error={errors.proof}
+            help={t('invoice.deliveryForm.proof.help')}
+          >
+            <TextInput
+              id="dlv-proof"
+              value={form.proof}
+              invalid={!!errors.proof}
+              onChange={e => set({ proof: e.target.value })}
+            />
           </Field>
         </div>
       </Card>

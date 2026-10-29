@@ -3,7 +3,7 @@ import type { BillingOverview, InvoiceRow } from '@/services/contracts';
 import type { Formatters } from '@/shared/format/formatters';
 import { invoiceStatus, type InvoiceStatus } from '@/shared/status';
 import { t } from '@/i18n/t';
-import { Badge, Button, Card, DataTable, EmptyState, FilterPills, ListStatus, PageHeader, ShowMore, Stat, StatRow, useListFilter, type Column } from '@/ui/primitives';
+import { Badge, Button, Card, EmptyState, ListBody, PageHeader, RecordLink, Stat, StatRow, type Column } from '@/ui/primitives';
 
 interface BillingScreenProps {
   overview: BillingOverview;
@@ -21,8 +21,7 @@ export function BillingScreen({ overview, fmt, canIssue, onOpenInvoice, onPrepar
   const [filter, setFilter] = useState<Filter>('all');
   const period = t('period.quarter', { ...overview.campaign.period });
   const scoped = filter === 'all' ? overview.invoices : overview.invoices.filter(i => i.status === filter);
-  const list = useListFilter(scoped, row => [row.tenantName, row.assetName]);
-  const totalAmount = list.filtered.reduce((sum, row) => sum + row.amount, 0);
+  const totalOf = (rows: InvoiceRow[]) => rows.reduce((sum, row) => sum + row.amount, 0);
 
   const columns: Column<InvoiceRow>[] = [
     {
@@ -30,7 +29,7 @@ export function BillingScreen({ overview, fmt, canIssue, onOpenInvoice, onPrepar
       header: t('billing.col.tenant'),
       render: row => (
         <div>
-          <div className="table__primary">{row.tenantName}</div>
+          <RecordLink onClick={() => onOpenInvoice(row.id)}>{row.tenantName}</RecordLink>
           <div className="table__secondary">{row.assetName}</div>
         </div>
       ),
@@ -47,17 +46,6 @@ export function BillingScreen({ overview, fmt, canIssue, onOpenInvoice, onPrepar
       key: 'delivery',
       header: t('billing.col.delivery'),
       render: row => <span className={row.deliveryDetail ? undefined : 'table__secondary'}>{row.deliveryDetail ?? t('billing.delivery.none')}</span>,
-    },
-    {
-      key: 'actions',
-      header: '',
-      render: row => (
-        <div className="table__actions">
-          <Button variant="neutral" onClick={() => onOpenInvoice(row.id)}>
-            {row.status === 'to-check' && canIssue ? t('billing.action.check') : t('billing.action.open')}
-          </Button>
-        </div>
-      ),
     },
   ];
 
@@ -100,25 +88,18 @@ export function BillingScreen({ overview, fmt, canIssue, onOpenInvoice, onPrepar
       </Card>
 
       <Card title={t('billing.list.title')} flush>
-        <ListStatus
-          count={list.filtered.length}
-          extra={fmt.moneyPlain(totalAmount)}
-          search={list.search}
-          onSearch={list.setSearch}
-          filters={<FilterPills options={filters} value={filter} onChange={setFilter} label={t('billing.col.status')} />}
+        <ListBody
+          rows={scoped}
+          haystack={row => [row.tenantName, row.assetName]}
+          columns={columns}
+          rowKey={row => row.id}
+          rowActions={row => [{ label: row.status === 'to-check' && canIssue ? t('billing.action.check') : t('billing.action.open'), onSelect: () => onOpenInvoice(row.id) }]}
+          caption={t('billing.list.title')}
+          filters={{ options: filters, value: filter, onChange: setFilter, label: t('billing.col.status') }}
+          extra={rows => fmt.moneyPlain(totalOf(rows))}
+          footer={rows => [t('billing.total', { count: rows.length }), '', fmt.moneyPlain(totalOf(rows)), '', '', '']}
+          empty={<EmptyState icon="invoice" title={t('billing.empty.title')} body={t('billing.empty.body')} trame />}
         />
-        {list.filtered.length === 0 ? (
-          <EmptyState icon="invoice" title={t('billing.empty.title')} body={t('billing.empty.body')} trame />
-        ) : (
-          <DataTable
-            caption={t('billing.list.title')}
-            columns={columns}
-            rows={list.visible}
-            rowKey={row => row.id}
-            footer={[t('billing.total', { count: list.filtered.length }), '', fmt.moneyPlain(totalAmount), '', '', '', '']}
-          />
-        )}
-        <ShowMore hidden={list.hidden} onClick={list.showMore} />
       </Card>
     </>
   );

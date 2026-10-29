@@ -5,17 +5,12 @@ import { useGetInvoice } from '@/services/hooks/use-get-invoice';
 import { useMarkInvoiceChecked, useRecordDelivery } from '@/services/hooks/use-invoice-actions';
 import { usePermission } from '@/shared/auth/use-permission';
 import { PERMISSIONS } from '@/shared/auth/permissions';
-import { AppError } from '@/shared/errors';
+import { errorMessage } from '@/shared/errors';
 import { t } from '@/i18n/t';
 import { InvoiceDeliveryScreen, InvoiceScreen, toDeliveryInput, type DeliveryForm } from '@/ui/screens/billing/InvoiceScreen';
 import { QueryState } from '../../query-state';
 import { useFormatters } from '../../use-formatters';
 import { useToast } from '../../toast-context';
-
-const message = (error: unknown) => {
-  const appError = AppError.from(error);
-  return appError.userMessage ?? t('state.error.body', { reference: appError.reference });
-};
 
 export function InvoicePage() {
   const { invoiceId = '' } = useParams();
@@ -36,7 +31,7 @@ export function InvoicePage() {
           onCheck={() =>
             check.mutate(undefined, {
               onSuccess: () => toast.notify({ tone: 'success', title: t('invoice.checked') }),
-              onError: error => toast.notify({ tone: 'danger', title: message(error) }),
+              onError: error => toast.notify({ tone: 'danger', title: errorMessage(error) }),
             })
           }
           onDelivery={() => void navigate(`/billing/invoices/${encodeURIComponent(invoiceId)}/delivery`)}
@@ -76,7 +71,7 @@ function DeliveryBody({ invoice }: { invoice: InvoiceDetail }) {
         })
       }
       submitting={mutation.isPending}
-      submitError={mutation.isError ? message(mutation.error) : undefined}
+      submitError={mutation.isError ? errorMessage(mutation.error) : undefined}
       onCancel={backToInvoice}
       onBack={() => void navigate('/billing')}
     />

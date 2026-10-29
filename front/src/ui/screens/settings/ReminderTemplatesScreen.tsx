@@ -1,18 +1,11 @@
 import type { ReminderChannel, ReminderTemplate, ReminderTemplateInput, ReminderTemplateValue } from '@/services/contracts';
 import type { Formatters } from '@/shared/format/formatters';
-import type { MessageKey } from '@/i18n/fr';
 import { reminderLevel } from '@/shared/status';
+import { reminderChannelKey as channelKey } from '@/shared/labels';
 import { t } from '@/i18n/t';
-import { Badge, Button, Card, DataTable, Field, FormPage, PageHeader, SelectInput, TextArea, TextInput, type Column , issuesFrom } from '@/ui/primitives';
+import { Badge, Card, DataTable, Field, FormActions, FormPage, PageHeader, SelectInput, TextArea, TextInput, issuesFrom, type Column } from '@/ui/primitives';
 import { settingsCrumbs, settingsRootCrumb, type SettingsNavigation } from './crumbs';
 import { VersionFields, VersionHistory, todayIso, validateVersionFields, type VersionFieldsValue } from './versions';
-
-const channelKey: Record<ReminderChannel, MessageKey> = {
-  email: 'reminders.channel.email',
-  letter: 'reminders.channel.letter',
-  'registered-letter': 'reminders.channel.registeredLetter',
-  file: 'reminders.channel.file',
-};
 
 interface ReminderTemplatesScreenProps {
   templates: ReminderTemplate[];
@@ -27,7 +20,7 @@ export function ReminderTemplatesScreen({ templates, fmt, isAdmin, onEdit, onOpe
     { key: 'level', header: t('reminders.col.level'), render: template => <Badge tone={reminderLevel[template.level].tone}>{t(reminderLevel[template.level].labelKey)}</Badge> },
     { key: 'delay', header: t('reminders.col.delay'), render: template => t('reminders.delay', { days: template.current.value.delayDays }) },
     { key: 'channel', header: t('reminders.col.channel'), render: template => t(channelKey[template.current.value.channel]) },
-    { key: 'subject', header: t('reminders.col.subject'), render: template => <span className="table__primary" style={{ color: 'var(--text-primary)' }}>{template.current.value.subject}</span> },
+    { key: 'subject', header: t('reminders.col.subject'), render: template => <span className="table__strong">{template.current.value.subject}</span> },
     {
       key: 'updated',
       header: t('reminders.col.updated'),
@@ -38,24 +31,12 @@ export function ReminderTemplatesScreen({ templates, fmt, isAdmin, onEdit, onOpe
         </div>
       ),
     },
-    {
-      key: 'actions',
-      header: '',
-      render: template =>
-        isAdmin ? (
-          <div className="table__actions">
-            <Button variant="neutral" onClick={() => onEdit(template.id)}>
-              {t('settings.action.edit')}
-            </Button>
-          </div>
-        ) : null,
-    },
   ];
   return (
     <>
       <PageHeader object="settings" breadcrumbs={settingsRootCrumb(onOpenSettings)} eyebrow={t('reminders.subtitle')} title={t('reminders.title')} />
       <Card flush>
-        <DataTable caption={t('reminders.title')} columns={columns} rows={templates} rowKey={template => template.id} footer={[t('reminders.total', { count: templates.length }), '', '', '', '', '']} />
+        <DataTable caption={t('reminders.title')} columns={columns} rows={templates} rowKey={template => template.id} rowActions={isAdmin ? template => [{ label: t('settings.action.edit'), onSelect: () => onEdit(template.id) }] : undefined} footer={[t('reminders.total', { count: templates.length }), '', '', '', '']} />
       </Card>
     </>
   );
@@ -134,16 +115,16 @@ export function ReminderTemplateFormScreen({ template, fmt, form, onChange, onSu
             </SelectInput>
           </Field>
         </div>
-        <div style={{ marginTop: 16 }}>
+        <FormActions>
           <Field id="rt-subject" label={t('reminders.field.subject')} required error={errors.subject}>
             <TextInput id="rt-subject" value={form.subject} invalid={!!errors.subject} onChange={e => set({ subject: e.target.value })} />
           </Field>
-        </div>
-        <div style={{ marginTop: 16 }}>
+        </FormActions>
+        <FormActions>
           <Field id="rt-body" label={t('reminders.field.body')} required error={errors.body}>
             <TextArea id="rt-body" value={form.body} invalid={!!errors.body} onChange={e => set({ body: e.target.value })} />
           </Field>
-        </div>
+        </FormActions>
       </Card>
       <VersionFields value={form} error={errors.effectiveFrom} onChange={value => set(value)} />
       <VersionHistory versions={template.versions} current={template.current} describe={describeReminderTemplate} fmt={fmt} />

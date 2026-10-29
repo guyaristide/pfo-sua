@@ -4,7 +4,7 @@ import type { Formatters } from '@/shared/format/formatters';
 import { reportStatus, type ReportStatus } from '@/shared/status';
 import { exportCsv } from '@/shared/export/csv';
 import { t } from '@/i18n/t';
-import { Badge, Button, Card, DockedFooter, Field, PageHeader, Path, TextInput, type PathStep } from '@/ui/primitives';
+import {Badge, Button, Card, DockedFooter, Field, FieldGrid, PageHeader, Path, RecordLayout, RelatedList, TextInput, Timeline, type PathStep } from '@/ui/primitives';
 
 const steps: ReportStatus[] = ['draft', 'in-review', 'validated', 'signed'];
 
@@ -94,42 +94,41 @@ export function ReportScreen({ report, fmt, canSubmit, canValidate, onTransition
           { label: t('reports.col.status'), value: <Badge tone={reportStatus[report.status].tone}>{t(reportStatus[report.status].labelKey)}</Badge> },
         ]}
       />
-      <div className="layout-two">
-        <Card title={t('report.sections.title')} flush>
-          <StatGrid report={report} fmt={fmt} />
-        </Card>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Card title={t('report.signatories.title')}>
-            <ul className="check-list">
-              {report.signatories.map(signatory => (
-                <li key={signatory.role}>
-                  <div style={{ flex: 1 }}>
-                    <div className="check-list__title">{signatory.name}</div>
-                    <div className="check-list__detail">{signatory.role}</div>
-                  </div>
-                  <Badge tone={signatory.signedOn ? 'success' : 'neutral'}>{signatory.signedOn ? t('report.signatories.signed', { date: fmt.shortDate(signatory.signedOn) }) : t('report.signatories.pending')}</Badge>
-                </li>
-              ))}
-            </ul>
+      <RecordLayout
+        main={
+          <Card title={t('report.sections.title')}>
+            <FieldGrid
+              columns={2}
+              fields={report.sections.map(section => ({
+                label: t(`report.section.${section.key}`),
+                value: (
+                  <>
+                    <div className="table__strong numeric">{section.amount === null ? t('report.section.pending') : fmt.moneyPlain(section.amount)}</div>
+                    <div className="table__secondary">{section.detail}</div>
+                  </>
+                ),
+              }))}
+            />
           </Card>
-          <Card title={t('report.history.title')} flush>
-            {report.history.map(event => {
-              const { day, month } = fmt.dayMonth(event.date);
-              return (
-                <div className="timeline-item" key={event.id}>
-                  <div>
-                    <div className="timeline-item__day">{day}</div>
-                    <div className="timeline-item__month">{month}</div>
-                  </div>
-                  <div>
-                    <div className="timeline-item__title">{event.label}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </Card>
-        </div>
-      </div>
+        }
+        aside={
+          <>
+            <RelatedList
+              title={t('report.signatories.title')}
+              items={report.signatories.map(signatory => ({
+                id: signatory.role,
+                label: signatory.name,
+                meta: signatory.role,
+                aside: <Badge tone={signatory.signedOn ? 'success' : 'neutral'}>{signatory.signedOn ? t('report.signatories.signed', { date: fmt.shortDate(signatory.signedOn) }) : t('report.signatories.pending')}</Badge>,
+              }))}
+              empty={{ title: t('report.signatories.pending') }}
+            />
+            <Card title={t('report.history.title')} flush>
+              <Timeline fmt={fmt} items={report.history.map(event => ({ id: event.id, date: event.date, title: event.label }))} />
+            </Card>
+          </>
+        }
+      />
       {report.status !== 'signed' ? (
         <Card>
           <Field id="report-note" label={t('report.note')}>
@@ -139,21 +138,5 @@ export function ReportScreen({ report, fmt, canSubmit, canValidate, onTransition
       ) : null}
       <DockedFooter tone={submitError ? 'danger' : 'neutral'} status={submitError ?? report.stepDetail} actions={actions} />
     </>
-  );
-}
-
-function StatGrid({ report, fmt }: { report: ReportDetail; fmt: Formatters }) {
-  return (
-    <div className="stat-row" style={{ flexWrap: 'wrap' }}>
-      {report.sections.map(section => (
-        <div className="stat" key={section.key} style={{ flex: '1 1 45%' }}>
-          <div className="stat__label">{t(`report.section.${section.key}`)}</div>
-          <div className="stat__value" style={{ fontSize: 20 }}>
-            {section.amount === null ? t('report.section.pending') : fmt.moneyPlain(section.amount)}
-          </div>
-          <div className="stat__delta stat__delta--neutral">{section.detail}</div>
-        </div>
-      ))}
-    </div>
   );
 }

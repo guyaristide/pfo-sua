@@ -3,7 +3,7 @@ import { useParams } from 'react-router';
 import type { ReminderTemplate } from '@/services/contracts';
 import { useListReminderTemplates } from '@/services/hooks/use-list-reminder-templates';
 import { useSaveReminderTemplate } from '@/services/hooks/use-save-reminder-template';
-import { AppError } from '@/shared/errors';
+import { errorMessage } from '@/shared/errors';
 import { t } from '@/i18n/t';
 import {
   ReminderTemplateFormScreen,
@@ -64,7 +64,6 @@ function ReminderTemplateFormBody({ template }: { template: ReminderTemplate }) 
   const [initial] = useState(() => reminderTemplateToForm(template));
   const draft = useDraft<ReminderTemplateForm>(`settings.reminder.${template.id}`, initial);
   const mutation = useSaveReminderTemplate(template.id);
-  const error = mutation.isError ? AppError.from(mutation.error) : null;
   return (
     <ReminderTemplateFormScreen
       template={template}
@@ -72,7 +71,7 @@ function ReminderTemplateFormBody({ template }: { template: ReminderTemplate }) 
       form={draft.value}
       onChange={draft.setValue}
       submitting={mutation.isPending}
-      submitError={error ? (error.userMessage ?? t('state.error.body', { reference: error.reference })) : undefined}
+      submitError={mutation.isError ? errorMessage(mutation.error) : undefined}
       onSubmit={() =>
         mutation.mutate(toReminderTemplateInput(draft.value), {
           onSuccess: () => {

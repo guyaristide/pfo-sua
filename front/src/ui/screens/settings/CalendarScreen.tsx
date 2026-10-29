@@ -3,7 +3,7 @@ import type { Formatters } from '@/shared/format/formatters';
 import type { MessageKey } from '@/i18n/fr';
 import { roleKeys, roleLabelKey } from '@/shared/roles';
 import { t } from '@/i18n/t';
-import { Button, Card, DataTable, Field, FormPage, PageHeader, SelectInput, TextInput, type Column , issuesFrom } from '@/ui/primitives';
+import { Card, DataTable, Field, FormPage, PageHeader, RecordLink, SelectInput, TextInput, issuesFrom, type Column } from '@/ui/primitives';
 import { settingsCrumbs, settingsRootCrumb, type SettingsNavigation } from './crumbs';
 import { VersionFields, VersionHistory, sinceLabel, todayIso, validateVersionFields, type VersionFieldsValue } from './versions';
 
@@ -47,7 +47,7 @@ export function CalendarScreen({ rules, fmt, isAdmin, onEdit, onOpenSettings }: 
       header: t('calendar.col.rule'),
       render: rule => (
         <div>
-          <div className="table__primary">{rule.label}</div>
+          {isAdmin ? <RecordLink onClick={() => onEdit(rule.id)}>{rule.label}</RecordLink> : <div className="table__strong">{rule.label}</div>}
           <div className="table__secondary">
             {t(frequencyKey[rule.frequency])} · {sinceLabel(rule.current, fmt)}
           </div>
@@ -57,24 +57,12 @@ export function CalendarScreen({ rules, fmt, isAdmin, onEdit, onOpenSettings }: 
     { key: 'when', header: t('calendar.col.when'), render: rule => ruleSentence(rule, rule.current.value, fmt) },
     { key: 'owner', header: t('calendar.col.owner'), render: rule => t(roleLabelKey[rule.current.value.ownerRole]) },
     { key: 'next', header: t('calendar.col.next'), render: rule => (rule.nextOccurrence ? fmt.shortDate(rule.nextOccurrence) : <span className="table__secondary">{t('calendar.next.none')}</span>) },
-    {
-      key: 'actions',
-      header: '',
-      render: rule =>
-        isAdmin ? (
-          <div className="table__actions">
-            <Button variant="neutral" onClick={() => onEdit(rule.id)}>
-              {t('settings.action.edit')}
-            </Button>
-          </div>
-        ) : null,
-    },
   ];
   return (
     <>
       <PageHeader object="settings" breadcrumbs={settingsRootCrumb(onOpenSettings)} eyebrow={t('calendar.subtitle')} title={t('calendar.title')} />
       <Card flush>
-        <DataTable caption={t('calendar.title')} columns={columns} rows={rules} rowKey={rule => rule.id} footer={[t('calendar.total', { count: rules.length }), '', '', '', '']} />
+        <DataTable caption={t('calendar.title')} columns={columns} rows={rules} rowKey={rule => rule.id} rowActions={isAdmin ? rule => [{ label: t('settings.action.edit'), onSelect: () => onEdit(rule.id) }] : undefined} footer={[t('calendar.total', { count: rules.length }), '', '', '']} />
       </Card>
     </>
   );

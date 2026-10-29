@@ -1,17 +1,8 @@
 import type { AssetSummary, DocumentDetail, DocumentKind, DocumentUploadInput, DocumentVersion, TenantOption } from '@/services/contracts';
 import type { Formatters } from '@/shared/format/formatters';
-import type { MessageKey } from '@/i18n/fr';
 import { t } from '@/i18n/t';
-import { Button, Card, DataTable, Field, FormPage, Icon, Lookup, PageHeader, SelectInput, TextInput, issuesFrom, type Column } from '@/ui/primitives';
-
-export const documentKindKey: Record<DocumentKind, MessageKey> = {
-  lease: 'documents.kind.lease',
-  report: 'documents.kind.report',
-  invoice: 'documents.kind.invoice',
-  statement: 'documents.kind.statement',
-  minutes: 'documents.kind.minutes',
-  other: 'documents.kind.other',
-};
+import { documentKindKey } from '@/shared/labels';
+import { Button, Card, DataTable, Field, FileDrop, FormPage, Lookup, PageHeader, SelectInput, TextInput, issuesFrom, type Column } from '@/ui/primitives';
 
 interface DocumentScreenProps {
   document: DocumentDetail;
@@ -130,21 +121,15 @@ export function UploadDocumentScreen({ replacing, assets, tenants, form, onChang
     >
       <Card>
         <Field id="up-file" label={t('document.upload.file')} required error={errors.fileName}>
-          <label className="dropzone">
-            <Icon name="upload" size={28} />
-            <span>{form.fileName ? t('document.upload.chosen', { name: form.fileName }) : t('document.upload.drop')}</span>
-            <input
-              id="up-file"
-              type="file"
-              className="visually-hidden"
-              onChange={event => {
-                const file = event.target.files?.[0];
-                if (file) set({ fileName: file.name, name: form.name || file.name.replace(/\.[^.]+$/, '') });
-              }}
-            />
-          </label>
+          <FileDrop
+            id="up-file"
+            label={t('document.upload.drop')}
+            accept=""
+            fileName={form.fileName ? t('document.upload.chosen', { name: form.fileName }) : null}
+            onFile={file => set({ fileName: file.name, name: form.name || file.name.replace(/\.[^.]+$/, '') })}
+          />
         </Field>
-        <div className="form-grid" style={{ marginTop: 16 }}>
+        <div className="form-grid form-grid--spaced">
           <Field id="up-name" label={t('document.upload.name')} required error={errors.name}>
             <TextInput id="up-name" value={form.name} invalid={!!errors.name} onChange={e => set({ name: e.target.value })} />
           </Field>

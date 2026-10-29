@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { FeeSettings } from '@/services/contracts';
 import { useGetFees } from '@/services/hooks/use-get-fees';
 import { useSaveFees } from '@/services/hooks/use-save-fees';
-import { AppError } from '@/shared/errors';
+import { errorMessage } from '@/shared/errors';
 import { t } from '@/i18n/t';
 import { FeesFormScreen, FeesScreen, feesToForm, toFeesInput, type FeesForm } from '@/ui/screens/settings/FeesScreen';
 import { QueryState } from '../../query-state';
@@ -37,7 +37,6 @@ function FeesFormBody({ fees }: { fees: FeeSettings }) {
   const [initial] = useState(() => feesToForm(fees));
   const draft = useDraft<FeesForm>('settings.fees', initial);
   const mutation = useSaveFees();
-  const error = mutation.isError ? AppError.from(mutation.error) : null;
   return (
     <FeesFormScreen
       fees={fees}
@@ -45,7 +44,7 @@ function FeesFormBody({ fees }: { fees: FeeSettings }) {
       form={draft.value}
       onChange={draft.setValue}
       submitting={mutation.isPending}
-      submitError={error ? (error.userMessage ?? t('state.error.body', { reference: error.reference })) : undefined}
+      submitError={mutation.isError ? errorMessage(mutation.error) : undefined}
       onSubmit={() =>
         mutation.mutate(toFeesInput(draft.value), {
           onSuccess: () => {

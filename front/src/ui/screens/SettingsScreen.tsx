@@ -33,7 +33,7 @@ export function SettingsScreen({ overview, isAdmin, onOpenSection }: SettingsScr
           const definition = sections[section.key];
           return (
             <section className="section-tile" key={section.key} aria-labelledby={`settings-${section.key}`}>
-              <span className="object-icon" style={{ background: 'var(--color-brand)' }}>
+              <span className="object-icon object-icon--brand" aria-hidden="true">
                 <Icon name={definition.icon} size={18} />
               </span>
               <div className="section-tile__body">

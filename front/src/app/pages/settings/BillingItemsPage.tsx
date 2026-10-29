@@ -3,7 +3,7 @@ import { useParams } from 'react-router';
 import type { BillingItem } from '@/services/contracts';
 import { useListBillingItems } from '@/services/hooks/use-list-billing-items';
 import { useSaveBillingItem } from '@/services/hooks/use-save-billing-item';
-import { AppError } from '@/shared/errors';
+import { errorMessage } from '@/shared/errors';
 import { t } from '@/i18n/t';
 import {
   BillingItemFormScreen,
@@ -79,7 +79,6 @@ function BillingItemFormBody({ item }: { item: BillingItem | null }) {
   const [initial] = useState(() => (item ? billingItemToForm(item) : emptyBillingItemForm()));
   const draft = useDraft<BillingItemForm>(`settings.billing-item.${item?.id ?? 'new'}`, initial);
   const mutation = useSaveBillingItem(item?.id);
-  const error = mutation.isError ? AppError.from(mutation.error) : null;
   return (
     <BillingItemFormScreen
       item={item}
@@ -87,7 +86,7 @@ function BillingItemFormBody({ item }: { item: BillingItem | null }) {
       form={draft.value}
       onChange={draft.setValue}
       submitting={mutation.isPending}
-      submitError={error ? (error.userMessage ?? t('state.error.body', { reference: error.reference })) : undefined}
+      submitError={mutation.isError ? errorMessage(mutation.error) : undefined}
       onSubmit={() =>
         mutation.mutate(toBillingItemInput(draft.value), {
           onSuccess: () => {

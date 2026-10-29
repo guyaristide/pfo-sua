@@ -4,29 +4,24 @@ import type { AssetRecord, TenantImportRow } from '@/services/contracts';
 import { useGetAssetRecord } from '@/services/hooks/use-get-asset-record';
 import { useImportTenants } from '@/services/hooks/use-import-tenants';
 import { useServices } from '@/services/service-context';
-import { usePermission } from '@/shared/auth/use-permission';
 import { PERMISSIONS } from '@/shared/auth/permissions';
-import { AppError } from '@/shared/errors';
+import { errorMessage } from '@/shared/errors';
 import { t } from '@/i18n/t';
 import { ImportTenantsScreen } from '@/ui/screens/ImportTenantsScreen';
-import { Button, EmptyState } from '@/ui/primitives';
 import { QueryState } from '../query-state';
+import { RequirePermission } from '../require-permission';
 import { useFormatters } from '../use-formatters';
 import { useToast } from '../toast-context';
 
 export function ImportTenantsPage() {
   const { assetId = '' } = useParams();
   const navigate = useNavigate();
-  const canWrite = usePermission(PERMISSIONS.TENANT_WRITE);
   const record = useGetAssetRecord(assetId);
-  if (!canWrite) {
-    return (
-      <div className="card">
-        <EmptyState icon="lock" title={t('settings.adminOnly')} action={<Button variant="neutral" onClick={() => void navigate(`/assets/${assetId}`)}>{t('asset.record.backToList')}</Button>} />
-      </div>
-    );
-  }
-  return <QueryState query={record}>{asset => <ImportBody asset={asset} />}</QueryState>;
+  return (
+    <RequirePermission permission={PERMISSIONS.TENANT_WRITE} onBack={() => void navigate(`/assets/${assetId}`)} backLabel={t('asset.record.backToList')}>
+      <QueryState query={record}>{asset => <ImportBody asset={asset} />}</QueryState>
+    </RequirePermission>
+  );
 }
 
 function ImportBody({ asset }: { asset: AssetRecord }) {
@@ -36,7 +31,6 @@ function ImportBody({ asset }: { asset: AssetRecord }) {
   const { demo } = useServices();
   const [rows, setRows] = useState<TenantImportRow[]>([]);
   const mutation = useImportTenants(asset.id);
-  const error = mutation.isError ? AppError.from(mutation.error) : null;
   const openAsset = () => void navigate(`/assets/${encodeURIComponent(asset.id)}`);
   return (
     <ImportTenantsScreen
@@ -56,7 +50,7 @@ function ImportBody({ asset }: { asset: AssetRecord }) {
         })
       }
       submitting={mutation.isPending}
-      submitError={error ? (error.userMessage ?? t('state.error.body', { reference: error.reference })) : undefined}
+      submitError={mutation.isError ? errorMessage(mutation.error) : undefined}
       onBack={() => void navigate('/assets')}
       onOpenAsset={openAsset}
     />

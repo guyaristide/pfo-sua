@@ -1,13 +1,12 @@
 import { useNavigate } from 'react-router';
 import { useCreateAsset } from '@/services/hooks/use-create-asset';
 import { useListBillingItems } from '@/services/hooks/use-list-billing-items';
-import { usePermission } from '@/shared/auth/use-permission';
 import { PERMISSIONS } from '@/shared/auth/permissions';
-import { AppError } from '@/shared/errors';
+import { errorMessage } from '@/shared/errors';
 import { t } from '@/i18n/t';
-import { NewAssetScreen, emptyNewAssetDraft, toNewAssetInput, type NewAssetDraft, type NewAssetStep } from '@/ui/screens/NewAssetScreen';
-import { Button, EmptyState } from '@/ui/primitives';
+import { NewAssetScreen, emptyNewAssetDraft, toNewAssetInput, withDefaultItems, type NewAssetDraft, type NewAssetStep } from '@/ui/screens/NewAssetScreen';
 import { QueryState } from '../query-state';
+import { RequirePermission } from '../require-permission';
 import { useDraft } from '../use-draft';
 import { useToast } from '../toast-context';
 
@@ -25,32 +24,23 @@ const samples = {
 export function NewAssetPage() {
   const navigate = useNavigate();
   const toast = useToast();
-  const canCreate = usePermission(PERMISSIONS.ASSET_WRITE);
   const billingItems = useListBillingItems();
   const draft = useDraft<NewAssetDraft>('assets.new', emptyNewAssetDraft);
   const mutation = useCreateAsset();
   const back = () => void navigate('/assets');
-
-  if (!canCreate) {
-    return (
-      <div className="card">
-        <EmptyState icon="lock" title={t('settings.adminOnly')} action={<Button variant="neutral" onClick={back}>{t('asset.record.backToList')}</Button>} />
-      </div>
-    );
-  }
 
   const useSample = (step: NewAssetStep) => {
     if (step === 'owner') draft.setValue({ ...draft.value, ...samples.owner });
     if (step === 'mandate') draft.setValue({ ...draft.value, ...samples.mandate });
     if (step === 'lots') draft.setValue({ ...draft.value, lots: samples.lots.map((lot, index) => ({ key: `sample-${index}`, ...lot })) });
   };
-  const error = mutation.isError ? AppError.from(mutation.error) : null;
 
   return (
+    <RequirePermission permission={PERMISSIONS.ASSET_WRITE} onBack={back} backLabel={t('asset.record.backToList')}>
     <QueryState query={billingItems}>
       {items => (
         <NewAssetScreen
-          draft={draft.value.billingItemCodes.length === 0 && draft.value.step === 'owner' ? { ...draft.value, billingItemCodes: items.filter(i => i.active).map(i => i.code) } : draft.value}
+          draft={withDefaultItems(draft.value, items)}
           billingItems={items}
           onDraftChange={draft.setValue}
           onUseSample={useSample}
@@ -64,7 +54,7 @@ export function NewAssetPage() {
             })
           }
           submitting={mutation.isPending}
-          submitError={error ? (error.userMessage ?? t('state.error.body', { reference: error.reference })) : undefined}
+          submitError={mutation.isError ? errorMessage(mutation.error) : undefined}
           onKeepDraft={back}
           onDiscardDraft={() => {
             draft.discard();
@@ -74,5 +64,6 @@ export function NewAssetPage() {
         />
       )}
     </QueryState>
+    </RequirePermission>
   );
 }

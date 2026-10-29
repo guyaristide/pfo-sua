@@ -4,18 +4,13 @@ import type { Period } from '@/services/contracts';
 import { useCampaignPreview } from '@/services/hooks/use-campaign-preview';
 import { useGetBillingOverview } from '@/services/hooks/use-get-billing-overview';
 import { useIssueChecked, usePrepareCampaign } from '@/services/hooks/use-invoice-actions';
-import { AppError } from '@/shared/errors';
+import { errorMessage } from '@/shared/errors';
 import { t } from '@/i18n/t';
 import { CampaignScreen, IssueScreen } from '@/ui/screens/billing/CampaignScreen';
 import { QueryState } from '../../query-state';
 import { useScope } from '../../scope-context';
 import { useFormatters } from '../../use-formatters';
 import { useToast } from '../../toast-context';
-
-const message = (error: unknown) => {
-  const appError = AppError.from(error);
-  return appError.userMessage ?? t('state.error.body', { reference: appError.reference });
-};
 
 /** Les trimestres proposés : le courant et les deux suivants. */
 function upcomingPeriods(): Period[] {
@@ -54,7 +49,7 @@ export function CampaignPage() {
         })
       }
       submitting={mutation.isPending}
-      submitError={mutation.isError ? message(mutation.error) : undefined}
+      submitError={mutation.isError ? errorMessage(mutation.error) : undefined}
       onBack={() => void navigate('/billing')}
     />
   );
@@ -82,7 +77,7 @@ export function IssuePage() {
             })
           }
           submitting={mutation.isPending}
-          submitError={mutation.isError ? message(mutation.error) : undefined}
+          submitError={mutation.isError ? errorMessage(mutation.error) : undefined}
           onBack={() => void navigate('/billing')}
         />
       )}

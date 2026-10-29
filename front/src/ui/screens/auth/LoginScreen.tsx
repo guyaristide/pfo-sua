@@ -1,5 +1,6 @@
 import type { CodeRequestResult } from '@/services/contracts';
 import { t } from '@/i18n/t';
+import { isEmail } from '@/shared/validation';
 import { BrandMark, Button, Field, TextInput } from '@/ui/primitives';
 import './login.css';
 
@@ -25,13 +26,12 @@ interface LoginScreenProps {
   exampleEmail: string | null;
 }
 
-export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const CODE_PATTERN = /^\d{6}$/;
 
 /** Connexion par code e-mail (prototype d'Elodie) : l'adresse, puis les six chiffres. */
 export function LoginScreen(props: LoginScreenProps) {
   const { step, email, code, onEmailChange, onCodeChange, onRequestCode, onVerify, onChangeEmail, requesting, verifying, requestError, verifyError, notice, codeRequest, exampleEmail } = props;
-  const emailValid = EMAIL_PATTERN.test(email.trim());
+  const emailValid = isEmail(email);
   const codeValid = CODE_PATTERN.test(code.trim());
 
   return (
@@ -56,7 +56,7 @@ export function LoginScreen(props: LoginScreenProps) {
               <h1 className="login__title">{t('login.title')}</h1>
               <p className="login__subtitle">{t('login.subtitle')}</p>
               {notice ? <p className="login__note">{notice}</p> : null}
-              <Field id="login-email" label={t('login.email')} required error={requestError ?? (email && !emailValid ? t('login.email.invalid') : undefined)}>
+              <Field id="login-email" label={t('login.email')} required error={requestError ?? (email && !emailValid ? t('form.email.invalid') : undefined)}>
                 <TextInput id="login-email" type="email" autoComplete="email" autoFocus placeholder={t('login.email.placeholder')} value={email} invalid={!!requestError} onChange={e => onEmailChange(e.target.value)} />
               </Field>
               <Button variant="brand" type="submit" disabled={!emailValid || requesting}>
@@ -119,10 +119,13 @@ export function LoginScreen(props: LoginScreenProps) {
             </form>
           )}
           <p className="login__note">{t('login.noAccess')}</p>
+          <p className="login__note">
+            <a href="/owner/login">{t('login.owner')}</a>
+          </p>
         </div>
       </div>
       <aside className="login__panel">
-        <BrandMark size={220} />
+        <BrandMark />
         <p>{t('login.tagline')}</p>
       </aside>
     </div>

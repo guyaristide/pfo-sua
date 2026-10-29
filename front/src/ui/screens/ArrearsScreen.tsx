@@ -4,7 +4,7 @@ import type { Formatters } from '@/shared/format/formatters';
 import { arrearsBucket, reminderLevel, type ArrearsBucket } from '@/shared/status';
 import { t } from '@/i18n/t';
 import { exportCsv } from '@/shared/export/csv';
-import { Badge, Button, Card, DataTable, EmptyState, FilterPills, ListStatus, PageHeader, ShowMore, Stat, StatRow, useListFilter, type Column } from '@/ui/primitives';
+import { Badge, Button, Card, EmptyState, ListBody, PageHeader, RecordLink, Stat, StatRow, type Column } from '@/ui/primitives';
 
 interface ArrearsScreenProps {
   overview: ArrearsOverview;
@@ -20,8 +20,7 @@ type Filter = ArrearsBucket | 'all';
 export function ArrearsScreen({ overview, fmt, canRemind, onRemind, onOpen }: ArrearsScreenProps) {
   const [filter, setFilter] = useState<Filter>('all');
   const scoped = filter === 'all' ? overview.rows : overview.rows.filter(r => r.bucket === filter);
-  const list = useListFilter(scoped, row => [row.tenantName, row.assetName]);
-  const totalDue = list.filtered.reduce((sum, row) => sum + row.amountDue, 0);
+  const totalOf = (rows: ArrearsRow[]) => rows.reduce((sum, row) => sum + row.amountDue, 0);
 
   const columns: Column<ArrearsRow>[] = [
     {
@@ -29,7 +28,7 @@ export function ArrearsScreen({ overview, fmt, canRemind, onRemind, onOpen }: Ar
       header: t('arrears.col.tenant'),
       render: row => (
         <div>
-          <div className="table__primary">{row.tenantName}</div>
+          <RecordLink onClick={() => onOpen(row.tenantId)}>{row.tenantName}</RecordLink>
           <div className="table__secondary">{row.assetName}</div>
         </div>
       ),
@@ -50,23 +49,6 @@ export function ArrearsScreen({ overview, fmt, canRemind, onRemind, onOpen }: Ar
       key: 'reminder',
       header: t('arrears.col.reminder'),
       render: row => <Badge tone={reminderLevel[row.reminderLevel].tone}>{t(reminderLevel[row.reminderLevel].labelKey)}</Badge>,
-    },
-    {
-      key: 'actions',
-      header: '',
-      render: row => (
-        <div className="table__actions">
-          {canRemind && row.reminderLevel !== 'pre-litigation' ? (
-            <Button variant="neutral" onClick={() => onRemind(row.tenantId)}>
-              {t('arrears.action.remind')}
-            </Button>
-          ) : (
-            <Button variant="neutral" onClick={() => onOpen(row.tenantId)}>
-              {t('arrears.action.open')}
-            </Button>
-          )}
-        </div>
-      ),
     },
   ];
 
@@ -97,7 +79,7 @@ export function ArrearsScreen({ overview, fmt, canRemind, onRemind, onOpen }: Ar
                   { header: t('arrears.col.lastPayment'), value: row => (row.lastPaymentDate ? fmt.shortDate(row.lastPaymentDate) : '') },
                   { header: t('arrears.col.reminder'), value: row => t(reminderLevel[row.reminderLevel].labelKey) },
                 ],
-                list.filtered,
+                scoped,
               )
             }
           >
@@ -116,25 +98,18 @@ export function ArrearsScreen({ overview, fmt, canRemind, onRemind, onOpen }: Ar
       </Card>
 
       <Card title={t('arrears.list.title')} flush>
-        <ListStatus
-          count={list.filtered.length}
-          extra={fmt.moneyPlain(totalDue)}
-          search={list.search}
-          onSearch={list.setSearch}
-          filters={<FilterPills options={filters} value={filter} onChange={setFilter} label={t('arrears.col.bucket')} />}
+        <ListBody
+          rows={scoped}
+          haystack={row => [row.tenantName, row.assetName]}
+          columns={columns}
+          rowKey={row => row.id}
+          rowActions={row => [{ label: t('arrears.action.open'), onSelect: () => onOpen(row.tenantId) }, ...(canRemind && row.reminderLevel !== 'pre-litigation' ? [{ label: t('arrears.action.remind'), onSelect: () => onRemind(row.tenantId) }] : [])]}
+          caption={t('arrears.list.title')}
+          filters={{ options: filters, value: filter, onChange: setFilter, label: t('arrears.col.bucket') }}
+          extra={rows => fmt.moneyPlain(totalOf(rows))}
+          footer={rows => [t('arrears.total', { count: rows.length }), fmt.moneyPlain(totalOf(rows)), '', '', '', '']}
+          empty={<EmptyState icon="bell" title={t('arrears.empty.title')} body={t('arrears.empty.body')} trame />}
         />
-        {list.filtered.length === 0 ? (
-          <EmptyState icon="bell" title={t('arrears.empty.title')} body={t('arrears.empty.body')} trame />
-        ) : (
-          <DataTable
-            caption={t('arrears.list.title')}
-            columns={columns}
-            rows={list.visible}
-            rowKey={row => row.id}
-            footer={[t('arrears.total', { count: list.filtered.length }), fmt.moneyPlain(totalDue), '', '', '', '', '']}
-          />
-        )}
-        <ShowMore hidden={list.hidden} onClick={list.showMore} />
       </Card>
     </>
   );

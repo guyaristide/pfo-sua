@@ -3,7 +3,7 @@ import type { Formatters } from '@/shared/format/formatters';
 import { budgetStatus } from '@/shared/status';
 import { exportCsv } from '@/shared/export/csv';
 import { t } from '@/i18n/t';
-import { Badge, Button, Card, DataTable, Field, FormPage, NumberInput, PageHeader, TextInput, type Column , issuesFrom } from '@/ui/primitives';
+import { Badge, Button, Card, DataTable, Field, FormActions, FormPage, NumberInput, PageHeader, TextInput, issuesFrom, type Column } from '@/ui/primitives';
 
 const categoryLabel = (line: BudgetLine) => (line.category === 'common' ? t('budget.category.common') : t('budget.category.special', { building: line.building ?? '' }));
 
@@ -23,7 +23,7 @@ interface BudgetDetailScreenProps {
 
 export function BudgetDetailScreen({ budget, fmt, canValidate, onReestimate, onOpenAsset, onBack }: BudgetDetailScreenProps) {
   const columns: Column<BudgetLine>[] = [
-    { key: 'label', header: t('budget.lines.col.label'), render: line => <span className="table__primary">{line.label}</span> },
+    { key: 'label', header: t('budget.lines.col.label'), render: line => <span className="table__strong">{line.label}</span> },
     { key: 'category', header: t('budget.lines.col.category'), render: line => categoryLabel(line) },
     { key: 'budget', header: t('budget.lines.col.budget'), numeric: true, render: line => fmt.moneyPlain(line.budget) },
     { key: 'reestimated', header: t('budget.lines.col.reestimated'), numeric: true, render: line => (line.reestimated === null ? '' : fmt.moneyPlain(line.reestimated)) },
@@ -145,11 +145,11 @@ export function ReestimateScreen({ budget, fmt, form, onChange, onSubmit, submit
             </Field>
           ))}
         </div>
-        <div style={{ marginTop: 16 }}>
+        <FormActions>
           <Field id="re-note" label={t('budget.reestimate.note')}>
             <TextInput id="re-note" value={form.note} onChange={e => onChange({ ...form, note: e.target.value })} />
           </Field>
-        </div>
+        </FormActions>
       </Card>
     </FormPage>
   );

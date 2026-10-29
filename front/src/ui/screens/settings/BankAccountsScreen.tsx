@@ -1,6 +1,6 @@
 import type { AssetSummary, BankAccount, BankAccountInput, StatementCadence } from '@/services/contracts';
 import { t } from '@/i18n/t';
-import { Button, Card, DataTable, EmptyState, Field, FormPage, ListStatus, PageHeader, SelectInput, ShowMore, TextInput, useListFilter, type Column , issuesFrom } from '@/ui/primitives';
+import { Button, Card, EmptyState, Field, FormPage, ListBody, PageHeader, SelectInput, TextInput, issuesFrom, type Column } from '@/ui/primitives';
 import { settingsCrumbs, settingsRootCrumb, type SettingsNavigation } from './crumbs';
 
 const cadenceLabel = (cadence: StatementCadence) => (cadence === 'monthly' ? t('bankAccounts.cadence.monthly') : t('bankAccounts.cadence.daily'));
@@ -14,14 +14,13 @@ interface BankAccountsScreenProps {
 }
 
 export function BankAccountsScreen({ accounts, isAdmin, onNew, onEdit, onOpenSettings }: BankAccountsScreenProps) {
-  const list = useListFilter(accounts, account => [account.bank, account.holderName, account.assetName]);
   const columns: Column<BankAccount>[] = [
     {
       key: 'account',
       header: t('bankAccounts.col.account'),
       render: account => (
         <div>
-          <div className="table__primary">
+          <div className="table__strong">
             {account.bank} {account.accountLabel}
           </div>
           <div className="table__secondary">{account.holder === 'sci' ? t('bankAccounts.holder.sci') : t('bankAccounts.holder.pfo')}</div>
@@ -31,18 +30,6 @@ export function BankAccountsScreen({ accounts, isAdmin, onNew, onEdit, onOpenSet
     { key: 'holder', header: t('bankAccounts.col.holder'), render: account => account.holderName },
     { key: 'asset', header: t('bankAccounts.col.asset'), render: account => account.assetName ?? <span className="table__secondary">{t('bankAccounts.asset.none')}</span> },
     { key: 'cadence', header: t('bankAccounts.col.cadence'), render: account => cadenceLabel(account.cadence) },
-    {
-      key: 'actions',
-      header: '',
-      render: account =>
-        isAdmin ? (
-          <div className="table__actions">
-            <Button variant="neutral" onClick={() => onEdit(account.id)}>
-              {t('settings.action.edit')}
-            </Button>
-          </div>
-        ) : null,
-    },
   ];
   return (
     <>
@@ -60,13 +47,16 @@ export function BankAccountsScreen({ accounts, isAdmin, onNew, onEdit, onOpenSet
         }
       />
       <Card flush>
-        <ListStatus count={list.filtered.length} search={list.search} onSearch={list.setSearch} />
-        {list.filtered.length === 0 ? (
-          <EmptyState icon="bank" title={t('bankAccounts.empty.title')} body={t('bankAccounts.empty.body')} />
-        ) : (
-          <DataTable caption={t('bankAccounts.title')} columns={columns} rows={list.visible} rowKey={account => account.id} footer={[t('bankAccounts.total', { count: list.filtered.length }), '', '', '', '']} />
-        )}
-        <ShowMore hidden={list.hidden} onClick={list.showMore} />
+        <ListBody
+          rows={accounts}
+          haystack={account => [account.bank, account.holderName, account.assetName]}
+          columns={columns}
+          rowKey={account => account.id}
+          caption={t('bankAccounts.title')}
+          rowActions={isAdmin ? account => [{ label: t('settings.action.edit'), onSelect: () => onEdit(account.id) }] : undefined}
+          footer={rows => [t('bankAccounts.total', { count: rows.length }), '', '', '']}
+          empty={<EmptyState icon="bank" title={t('bankAccounts.empty.title')} body={t('bankAccounts.empty.body')} action={isAdmin ? <Button variant="neutral" onClick={onNew}>{t('bankAccounts.action.new')}</Button> : null} />}
+        />
       </Card>
     </>
   );

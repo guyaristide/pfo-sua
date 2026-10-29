@@ -2,7 +2,8 @@ import type { AssetSummary } from '@/services/contracts';
 import type { Formatters } from '@/shared/format/formatters';
 import { t } from '@/i18n/t';
 import { exportCsv } from '@/shared/export/csv';
-import { Button, Card, DataTable, EmptyState, ListStatus, PageHeader, ShowMore, useListFilter, type Column } from '@/ui/primitives';
+import { assetDataStatus } from '@/shared/status';
+import { Badge, Button, Card, EmptyState, ListBody, PageHeader, RecordLink, type Column } from '@/ui/primitives';
 
 interface AssetsScreenProps {
   assets: AssetSummary[];
@@ -14,11 +15,8 @@ interface AssetsScreenProps {
 
 /** Vue de liste SLDS §4 : ligne d'état avec effectif, recherche dans la liste, lots de 20, état vide avec action. */
 export function AssetsScreen({ assets, fmt, canCreate, onOpenAsset, onNew }: AssetsScreenProps) {
-  const list = useListFilter(assets, a => [a.name, a.location, a.ownerName]);
-  const { filtered, visible } = list;
-  const totalLots = filtered.reduce((sum, a) => sum + a.lotCount, 0);
-  const totalUnpaid = filtered.reduce((sum, a) => sum + a.unpaidAmount, 0);
-  const totalWeightedOccupancy = totalLots > 0 ? filtered.reduce((sum, a) => sum + a.occupancyRate * a.lotCount, 0) / totalLots : 0;
+  const lotsOf = (rows: AssetSummary[]) => rows.reduce((sum, a) => sum + a.lotCount, 0);
+  const occupancyOf = (rows: AssetSummary[]) => (lotsOf(rows) > 0 ? rows.reduce((sum, a) => sum + a.occupancyRate * a.lotCount, 0) / lotsOf(rows) : 0);
 
   const columns: Column<AssetSummary>[] = [
     {
@@ -26,26 +24,16 @@ export function AssetsScreen({ assets, fmt, canCreate, onOpenAsset, onNew }: Ass
       header: t('assets.col.asset'),
       render: a => (
         <div>
-          <div className="table__primary">{a.name}</div>
+          <RecordLink onClick={() => onOpenAsset(a.id)}>{a.name}</RecordLink>
           <div className="table__secondary">{a.location}</div>
         </div>
       ),
     },
     { key: 'owner', header: t('assets.col.owner'), render: a => a.ownerName },
     { key: 'lots', header: t('assets.col.lots'), numeric: true, render: a => a.lotCount },
-    { key: 'occupancy', header: t('assets.col.occupancy'), numeric: true, render: a => fmt.percent(a.occupancyRate) },
-    { key: 'unpaid', header: t('assets.col.unpaid'), numeric: true, render: a => fmt.moneyPlain(a.unpaidAmount) },
-    {
-      key: 'actions',
-      header: '',
-      render: a => (
-        <div className="table__actions">
-          <Button variant="neutral" onClick={() => onOpenAsset(a.id)}>
-            {t('assets.open')}
-          </Button>
-        </div>
-      ),
-    },
+    { key: 'occupancy', header: t('assets.col.occupancy'), numeric: true, render: a => (a.dataStatus === 'active' ? fmt.percent(a.occupancyRate) : '') },
+    { key: 'unpaid', header: t('assets.col.unpaid'), numeric: true, render: a => (a.dataStatus === 'active' ? fmt.moneyPlain(a.unpaidAmount) : '') },
+    { key: 'status', header: t('assets.col.status'), render: a => <Badge tone={assetDataStatus[a.dataStatus].tone}>{t(assetDataStatus[a.dataStatus].labelKey)}</Badge> },
   ];
 
   return (
@@ -63,13 +51,13 @@ export function AssetsScreen({ assets, fmt, canCreate, onOpenAsset, onNew }: Ass
                 exportCsv(
                   t('export.filename.assets'),
                   [
-                    { header: t('assets.col.asset'), value: a => a.name },
+                    { header: t('assets.col.asset'), value: (a: AssetSummary) => a.name },
                     { header: t('assets.col.owner'), value: a => a.ownerName },
                     { header: t('assets.col.lots'), value: a => a.lotCount },
                     { header: t('assets.col.occupancy'), value: a => fmt.percent(a.occupancyRate) },
                     { header: t('assets.col.unpaid'), value: a => a.unpaidAmount },
                   ],
-                  filtered,
+                  assets,
                 )
               }
             >
@@ -84,35 +72,30 @@ export function AssetsScreen({ assets, fmt, canCreate, onOpenAsset, onNew }: Ass
         }
       />
       <Card flush>
-        <ListStatus
-          count={filtered.length}
-          extra={`${totalLots} ${t('assets.col.lots').toLocaleLowerCase()}`}
-          search={list.search}
-          onSearch={list.setSearch}
+        <ListBody
+          rows={assets}
+          haystack={a => [a.name, a.location, a.ownerName]}
+          columns={columns}
+          rowKey={a => a.id}
+          caption={t('assets.title')}
+          rowActions={a => [{ label: t('assets.open'), onSelect: () => onOpenAsset(a.id) }]}
+          extra={rows => t('assets.lots.count', { count: lotsOf(rows) })}
+          footer={rows => [t('assets.total', { count: rows.length }), '', lotsOf(rows), fmt.percent(occupancyOf(rows)), fmt.moneyPlain(rows.reduce((sum, a) => sum + a.unpaidAmount, 0)), '']}
+          empty={
+            <EmptyState
+              icon="building"
+              title={t('assets.empty.title')}
+              body={t('assets.empty.body')}
+              action={
+                canCreate ? (
+                  <Button variant="neutral" iconLeading="plus" onClick={onNew}>
+                    {t('assets.new')}
+                  </Button>
+                ) : null
+              }
+            />
+          }
         />
-        {filtered.length === 0 ? (
-          <EmptyState
-            icon="building"
-            title={t('assets.empty.title')}
-            body={t('assets.empty.body')}
-            action={
-              canCreate && assets.length === 0 ? (
-                <Button variant="brand" iconLeading="plus" onClick={onNew}>
-                  {t('assets.new')}
-                </Button>
-              ) : null
-            }
-          />
-        ) : (
-          <DataTable
-            caption={t('assets.title')}
-            columns={columns}
-            rows={visible}
-            rowKey={a => a.id}
-            footer={[t('assets.total', { count: filtered.length }), '', totalLots, fmt.percent(totalWeightedOccupancy), fmt.moneyPlain(totalUnpaid), '']}
-          />
-        )}
-        <ShowMore hidden={list.hidden} onClick={list.showMore} />
       </Card>
     </>
   );

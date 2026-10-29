@@ -2,7 +2,7 @@ import type { BudgetOverview, BudgetRow } from '@/services/contracts';
 import type { Formatters } from '@/shared/format/formatters';
 import { budgetStatus } from '@/shared/status';
 import { t } from '@/i18n/t';
-import { Badge, Button, Card, DataTable, EmptyState, ListStatus, PageHeader, ShowMore, useListFilter, type Column } from '@/ui/primitives';
+import { Badge, Button, Card, EmptyState, ListBody, PageHeader, RecordLink, type Column } from '@/ui/primitives';
 
 interface BudgetScreenProps {
   overview: BudgetOverview;
@@ -21,9 +21,8 @@ function realisationRate(budget: number, realised: number): number {
 
 /** Charges et budget : budget initial, réestimé, réalisé, reddition au 15 avril (cadrage du 13/10). */
 export function BudgetScreen({ overview, fmt, canValidate, onOpen, onReestimate, onPrepare, preparing }: BudgetScreenProps) {
-  const list = useListFilter(overview.rows, row => [row.assetName, String(row.year)]);
-  const totalBudget = list.filtered.reduce((sum, row) => sum + row.budgetAmount, 0);
-  const totalRealised = list.filtered.reduce((sum, row) => sum + row.realisedAmount, 0);
+  const budgetOf = (rows: BudgetRow[]) => rows.reduce((sum, row) => sum + row.budgetAmount, 0);
+  const realisedOf = (rows: BudgetRow[]) => rows.reduce((sum, row) => sum + row.realisedAmount, 0);
 
   const columns: Column<BudgetRow>[] = [
     {
@@ -31,7 +30,7 @@ export function BudgetScreen({ overview, fmt, canValidate, onOpen, onReestimate,
       header: t('budget.col.asset'),
       render: row => (
         <div>
-          <div className="table__primary">{row.assetName}</div>
+          <RecordLink onClick={() => onOpen(row.id)}>{row.assetName}</RecordLink>
           <div className="table__secondary">{row.detail}</div>
         </div>
       ),
@@ -42,22 +41,6 @@ export function BudgetScreen({ overview, fmt, canValidate, onOpen, onReestimate,
     { key: 'realised', header: t('budget.col.realised'), numeric: true, render: row => fmt.moneyPlain(row.realisedAmount) },
     { key: 'rate', header: t('budget.col.rate'), numeric: true, render: row => fmt.percent(realisationRate(row.budgetAmount, row.realisedAmount)) },
     { key: 'settlement', header: t('budget.col.settlement'), render: row => fmt.shortDate(row.settlementDeadline) },
-    {
-      key: 'actions',
-      header: '',
-      render: row => (
-        <div className="table__actions">
-          {canValidate && row.status === 'initial' ? (
-            <Button variant="neutral" onClick={() => onReestimate(row.id)}>
-              {t('budget.action.reestimate')}
-            </Button>
-          ) : null}
-          <Button variant={canValidate && row.status === 'initial' ? 'base' : 'neutral'} onClick={() => onOpen(row.id)}>
-            {t('budget.action.open')}
-          </Button>
-        </div>
-      ),
-    },
   ];
 
   return (
@@ -75,28 +58,17 @@ export function BudgetScreen({ overview, fmt, canValidate, onOpen, onReestimate,
         }
       />
       <Card title={t('budget.list.title', { year: overview.year })} flush>
-        <ListStatus count={list.filtered.length} extra={fmt.moneyPlain(totalBudget)} search={list.search} onSearch={list.setSearch} />
-        {list.filtered.length === 0 ? (
-          <EmptyState icon="tag" title={t('budget.empty.title')} body={t('budget.empty.body')} trame />
-        ) : (
-          <DataTable
-            caption={t('budget.title')}
-            columns={columns}
-            rows={list.visible}
-            rowKey={row => row.id}
-            footer={[
-              t('budget.total', { count: list.filtered.length }),
-              '',
-              '',
-              fmt.moneyPlain(totalBudget),
-              fmt.moneyPlain(totalRealised),
-              fmt.percent(realisationRate(totalBudget, totalRealised)),
-              '',
-              '',
-            ]}
-          />
-        )}
-        <ShowMore hidden={list.hidden} onClick={list.showMore} />
+        <ListBody
+          rows={overview.rows}
+          haystack={row => [row.assetName, String(row.year)]}
+          columns={columns}
+          rowKey={row => row.id}
+          caption={t('budget.title')}
+          rowActions={row => [{ label: t('budget.action.open'), onSelect: () => onOpen(row.id) }, ...(canValidate && row.status === 'initial' ? [{ label: t('budget.action.reestimate'), onSelect: () => onReestimate(row.id) }] : [])]}
+          extra={rows => fmt.moneyPlain(budgetOf(rows))}
+          footer={rows => [t('budget.total', { count: rows.length }), '', '', fmt.moneyPlain(budgetOf(rows)), fmt.moneyPlain(realisedOf(rows)), fmt.percent(realisationRate(budgetOf(rows), realisedOf(rows))), '']}
+          empty={<EmptyState icon="tag" title={t('budget.empty.title')} body={t('budget.empty.body')} trame action={canValidate ? <Button variant="neutral" disabled={preparing} onClick={onPrepare}>{t('budget.action.prepare', { year: overview.year + 1 })}</Button> : null} />}
+        />
       </Card>
     </>
   );

@@ -1,7 +1,7 @@
 import type { CampaignPreview, InvoiceRow, Period } from '@/services/contracts';
 import type { Formatters } from '@/shared/format/formatters';
 import { t } from '@/i18n/t';
-import { Button, Card, DockedFooter, EmptyState, Field, PageHeader, SelectInput, Stat, StatRow } from '@/ui/primitives';
+import {AmountList, Button, Card, DockedFooter, EmptyState, Field, PageHeader, SelectInput, Stat, StatRow } from '@/ui/primitives';
 
 interface CampaignScreenProps {
   period: Period;
@@ -83,21 +83,12 @@ export function IssueScreen({ invoices, fmt, onIssue, submitting, submitError, o
       <PageHeader object="invoice" breadcrumbs={[{ label: t('nav.billing'), onClick: onBack }]} title={t('campaign.issue.title')} />
       <Card>
         {checked.length === 0 ? (
-          <EmptyState icon="invoice" title={t('campaign.issue.none')} trame />
+          <EmptyState icon="invoice" title={t('campaign.issue.none')} trame action={<Button variant="neutral" onClick={onBack}>{t('nav.billing')}</Button>} />
         ) : (
-          <ul className="check-list">
-            {checked.map(invoice => (
-              <li key={invoice.id}>
-                <div style={{ flex: 1 }}>
-                  <div className="check-list__title">{invoice.tenantName}</div>
-                  <div className="check-list__detail">
-                    {invoice.assetName} · {fmt.monthYear(invoice.periodStart)}
-                  </div>
-                </div>
-                <span className="numeric">{fmt.moneyPlain(invoice.amount)}</span>
-              </li>
-            ))}
-          </ul>
+          <AmountList
+            lines={checked.map(invoice => ({ label: `${invoice.tenantName} · ${invoice.assetName} · ${fmt.monthYear(invoice.periodStart)}`, value: fmt.moneyPlain(invoice.amount) }))}
+            total={{ label: t('campaign.issue.total', { count: checked.length }), value: fmt.money(total) }}
+          />
         )}
       </Card>
       <DockedFooter

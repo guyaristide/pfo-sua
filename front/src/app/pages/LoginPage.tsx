@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useRequestCode } from '@/services/hooks/use-request-code';
 import { useVerifyCode } from '@/services/hooks/use-verify-code';
-import { AppError } from '@/shared/errors';
+import { errorMessage } from '@/shared/errors';
 import { t } from '@/i18n/t';
 import { LoginScreen, type LoginStep } from '@/ui/screens/auth/LoginScreen';
 
@@ -24,10 +24,6 @@ export function LoginPage() {
   const request = useRequestCode();
   const verify = useVerifyCode();
 
-  const message = (error: unknown) => {
-    const appError = AppError.from(error);
-    return appError.userMessage ?? t('state.error.body', { reference: appError.reference });
-  };
 
   return (
     <LoginScreen
@@ -63,8 +59,8 @@ export function LoginPage() {
       }}
       requesting={request.isPending}
       verifying={verify.isPending}
-      requestError={request.isError ? message(request.error) : undefined}
-      verifyError={verify.isError ? message(verify.error) : undefined}
+      requestError={request.isError ? errorMessage(request.error) : undefined}
+      verifyError={verify.isError ? errorMessage(verify.error) : undefined}
       notice={state.reason === 'session-lost' ? t('login.sessionLost') : undefined}
       codeRequest={request.data ?? null}
       exampleEmail={EXAMPLE_EMAIL}

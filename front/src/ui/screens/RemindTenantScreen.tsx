@@ -1,9 +1,9 @@
 import type { ReminderChannel, ReminderInput, ReminderTemplate, TenantAccount } from '@/services/contracts';
 import type { Formatters } from '@/shared/format/formatters';
-import type { MessageKey } from '@/i18n/fr';
 import { reminderLevel, type ReminderLevel } from '@/shared/status';
+import { reminderChannelKey as channelKey } from '@/shared/labels';
 import { t } from '@/i18n/t';
-import { Card, Field, FormPage, SelectInput, TextArea, TextInput , issuesFrom } from '@/ui/primitives';
+import { Card, Field, FormActions, FormPage, SelectInput, TextArea, TextInput, issuesFrom } from '@/ui/primitives';
 
 export interface RemindForm {
   level: ReminderLevel;
@@ -12,12 +12,6 @@ export interface RemindForm {
   body: string;
 }
 
-const channelKey: Record<ReminderChannel, MessageKey> = {
-  email: 'reminders.channel.email',
-  letter: 'reminders.channel.letter',
-  'registered-letter': 'reminders.channel.registeredLetter',
-  file: 'reminders.channel.file',
-};
 const levelOrder: ReminderLevel[] = ['reminder-1', 'reminder-2', 'reminder-3', 'formal-notice', 'pre-litigation'];
 
 /** Le niveau proposé : celui qui suit le niveau actuel. */
@@ -112,16 +106,16 @@ export function RemindTenantScreen({ account, templates, fmt, form, onChange, on
             </SelectInput>
           </Field>
         </div>
-        <div style={{ marginTop: 16 }}>
+        <FormActions>
           <Field id="remind-subject" label={t('remind.subject')} required error={errors.subject}>
             <TextInput id="remind-subject" value={form.subject} invalid={!!errors.subject} onChange={e => set({ subject: e.target.value })} />
           </Field>
-        </div>
-        <div style={{ marginTop: 16 }}>
+        </FormActions>
+        <FormActions>
           <Field id="remind-body" label={t('remind.body')} required error={errors.body}>
             <TextArea id="remind-body" value={form.body} invalid={!!errors.body} onChange={e => set({ body: e.target.value })} />
           </Field>
-        </div>
+        </FormActions>
         {templates.length === 0 ? null : null}
       </Card>
     </FormPage>

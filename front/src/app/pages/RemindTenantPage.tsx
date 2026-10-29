@@ -4,7 +4,7 @@ import type { ReminderTemplate, TenantAccount } from '@/services/contracts';
 import { useGetTenantAccount } from '@/services/hooks/use-get-tenant-account';
 import { useListReminderTemplates } from '@/services/hooks/use-list-reminder-templates';
 import { useSendReminder } from '@/services/hooks/use-send-reminder';
-import { AppError } from '@/shared/errors';
+import { errorMessage } from '@/shared/errors';
 import { t } from '@/i18n/t';
 import { RemindTenantScreen, formFromTemplate, nextLevel, toReminderInput, type RemindForm } from '@/ui/screens/RemindTenantScreen';
 import { Button, EmptyState } from '@/ui/primitives';
@@ -29,7 +29,6 @@ function RemindBody({ account, templates }: { account: TenantAccount; templates:
   const toast = useToast();
   const [form, setForm] = useState<RemindForm>(() => formFromTemplate(nextLevel(account.reminderLevel), templates, account, fmt));
   const mutation = useSendReminder(account.id);
-  const error = mutation.isError ? AppError.from(mutation.error) : null;
   const backToTenant = () => void navigate(`/tenants/${encodeURIComponent(account.id)}`);
   if (account.balance >= 0) {
     return (
@@ -55,7 +54,7 @@ function RemindBody({ account, templates }: { account: TenantAccount; templates:
         })
       }
       submitting={mutation.isPending}
-      submitError={error ? (error.userMessage ?? t('state.error.body', { reference: error.reference })) : undefined}
+      submitError={mutation.isError ? errorMessage(mutation.error) : undefined}
       onCancel={backToTenant}
       onOpenArrears={() => void navigate('/arrears')}
     />

@@ -5,7 +5,7 @@ import { useGetBudget } from '@/services/hooks/use-get-budget';
 import { useReestimateBudget } from '@/services/hooks/use-budget-actions';
 import { usePermission } from '@/shared/auth/use-permission';
 import { PERMISSIONS } from '@/shared/auth/permissions';
-import { AppError } from '@/shared/errors';
+import { errorMessage } from '@/shared/errors';
 import { t } from '@/i18n/t';
 import { BudgetDetailScreen, ReestimateScreen, reestimateFormFrom, toReestimateInput, type ReestimateForm } from '@/ui/screens/budget/BudgetDetailScreen';
 import { QueryState } from '../../query-state';
@@ -46,7 +46,6 @@ function ReestimateBody({ budget }: { budget: BudgetDetail }) {
   const toast = useToast();
   const [form, setForm] = useState<ReestimateForm>(() => reestimateFormFrom(budget));
   const mutation = useReestimateBudget(budget.id);
-  const error = mutation.isError ? AppError.from(mutation.error) : null;
   const backToBudget = () => void navigate(`/budget/${encodeURIComponent(budget.id)}`);
   return (
     <ReestimateScreen
@@ -63,7 +62,7 @@ function ReestimateBody({ budget }: { budget: BudgetDetail }) {
         })
       }
       submitting={mutation.isPending}
-      submitError={error ? (error.userMessage ?? t('state.error.body', { reference: error.reference })) : undefined}
+      submitError={mutation.isError ? errorMessage(mutation.error) : undefined}
       onCancel={backToBudget}
       onBack={() => void navigate('/budget')}
     />

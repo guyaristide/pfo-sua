@@ -2,9 +2,9 @@ import type { BillingItem, BillingItemInput, BillingItemValue, BillingPeriodicit
 import type { Formatters } from '@/shared/format/formatters';
 import type { MessageKey } from '@/i18n/fr';
 import { t } from '@/i18n/t';
-import { Badge, Button, Card, CheckboxField, DataTable, EmptyState, Field, FormPage, ListStatus, PageHeader, SelectInput, ShowMore, TextInput, useListFilter, type Column , issuesFrom } from '@/ui/primitives';
+import { Badge, Button, Card, CheckboxField, EmptyState, Field, FormPage, ListBody, PageHeader, RecordLink, SelectInput, TextInput, issuesFrom, type Column } from '@/ui/primitives';
 import { settingsCrumbs, settingsRootCrumb, type SettingsNavigation } from './crumbs';
-import { scopeLabel } from './UsersScreen';
+import { assetScopeLabel } from '@/shared/labels';
 import { VersionFields, VersionHistory, sinceLabel, todayIso, validateVersionFields, type VersionFieldsValue } from './versions';
 
 export const periodicityKey: Record<BillingPeriodicity, MessageKey> = {
@@ -25,14 +25,13 @@ interface BillingItemsScreenProps {
 const yesNo = (value: boolean) => (value ? t('settings.yes') : t('settings.no'));
 
 export function BillingItemsScreen({ items, fmt, isAdmin, onNew, onEdit, onOpenSettings }: BillingItemsScreenProps) {
-  const list = useListFilter(items, item => [item.code, item.label]);
   const columns: Column<BillingItem>[] = [
     {
       key: 'item',
       header: t('billingItems.col.item'),
       render: item => (
         <div>
-          <div className="table__primary">{item.label}</div>
+          {isAdmin ? <RecordLink onClick={() => onEdit(item.id)}>{item.label}</RecordLink> : <div className="table__strong">{item.label}</div>}
           <div className="table__secondary">
             {item.code} · {sinceLabel(item.current, fmt)}
           </div>
@@ -43,19 +42,7 @@ export function BillingItemsScreen({ items, fmt, isAdmin, onNew, onEdit, onOpenS
     { key: 'feeBase', header: t('billingItems.col.feeBase'), render: item => yesNo(item.current.value.inFeeBase) },
     { key: 'vat', header: t('billingItems.col.vat'), render: item => yesNo(item.current.value.vatApplicable) },
     { key: 'periodicity', header: t('billingItems.col.periodicity'), render: item => t(periodicityKey[item.current.value.periodicity]) },
-    { key: 'scope', header: t('billingItems.col.scope'), render: item => scopeLabel(item.assetScope) },
-    {
-      key: 'actions',
-      header: '',
-      render: item =>
-        isAdmin ? (
-          <div className="table__actions">
-            <Button variant="neutral" onClick={() => onEdit(item.id)}>
-              {t('settings.action.edit')}
-            </Button>
-          </div>
-        ) : null,
-    },
+    { key: 'scope', header: t('billingItems.col.scope'), render: item => assetScopeLabel(item.assetScope) },
   ];
   return (
     <>
@@ -73,13 +60,16 @@ export function BillingItemsScreen({ items, fmt, isAdmin, onNew, onEdit, onOpenS
         }
       />
       <Card flush>
-        <ListStatus count={list.filtered.length} search={list.search} onSearch={list.setSearch} />
-        {list.filtered.length === 0 ? (
-          <EmptyState icon="tag" title={t('billingItems.empty.title')} body={t('billingItems.empty.body')} />
-        ) : (
-          <DataTable caption={t('billingItems.title')} columns={columns} rows={list.visible} rowKey={item => item.id} footer={[t('billingItems.total', { count: list.filtered.length }), '', '', '', '', '', '']} />
-        )}
-        <ShowMore hidden={list.hidden} onClick={list.showMore} />
+        <ListBody
+          rows={items}
+          haystack={item => [item.code, item.label]}
+          columns={columns}
+          rowKey={item => item.id}
+          caption={t('billingItems.title')}
+          rowActions={isAdmin ? item => [{ label: t('settings.action.edit'), onSelect: () => onEdit(item.id) }] : undefined}
+          footer={rows => [t('billingItems.total', { count: rows.length }), '', '', '', '', '']}
+          empty={<EmptyState icon="tag" title={t('billingItems.empty.title')} body={t('billingItems.empty.body')} action={isAdmin ? <Button variant="neutral" onClick={onNew}>{t('billingItems.action.new')}</Button> : null} />}
+        />
       </Card>
     </>
   );

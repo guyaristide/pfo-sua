@@ -2,7 +2,7 @@ import type { LotRow, TenantImportRow } from '@/services/contracts';
 import type { Formatters } from '@/shared/format/formatters';
 import { t } from '@/i18n/t';
 import { exportCsv } from '@/shared/export/csv';
-import { Badge, Button, Card, DataTable, DockedFooter, EmptyState, Icon, PageHeader, type Column } from '@/ui/primitives';
+import { Badge, Button, Card, DataTable, DockedFooter, EmptyState, FileDrop, FormActions, PageHeader, type Column } from '@/ui/primitives';
 
 export type ImportCheck = 'ok' | 'unknown-lot' | 'occupied-lot' | 'duplicate-lot';
 
@@ -54,7 +54,7 @@ export function ImportTenantsScreen(props: ImportTenantsScreenProps) {
       header: t('importTenants.col.tenant'),
       render: row => (
         <div>
-          <div className="table__primary">{row.name}</div>
+          <div className="table__strong">{row.name}</div>
           <div className="table__secondary">
             {row.contactName} · {row.email}
           </div>
@@ -105,24 +105,13 @@ export function ImportTenantsScreen(props: ImportTenantsScreenProps) {
       />
       {rows.length === 0 ? (
         <Card>
-          <label className="dropzone">
-            <Icon name="upload" size={28} />
-            <span>{t('importTenants.drop')}</span>
-            <input
-              type="file"
-              accept=".xlsx,.csv"
-              className="visually-hidden"
-              onChange={event => {
-                if (event.target.files && event.target.files.length > 0) onUseSample();
-              }}
-            />
-          </label>
+          <FileDrop id="import-tenants-file" label={t('importTenants.drop')} accept=".xlsx,.csv" onFile={onUseSample} />
           {sampleAvailable ? (
-            <div style={{ marginTop: 12 }}>
+            <FormActions>
               <Button variant="neutral" onClick={onUseSample}>
                 {t('importTenants.sample')}
               </Button>
-            </div>
+            </FormActions>
           ) : null}
         </Card>
       ) : (
