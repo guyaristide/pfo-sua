@@ -18,11 +18,21 @@ describe('ArrearsScreen', () => {
   });
 
   it("ne propose « Relancer » qu'avec le droit, jamais sur un dossier en pré-contentieux", () => {
+    const rows = arrearsAll.rows.slice(0, 20);
+    const menuOf = (index: number) => fireEvent.click(screen.getAllByRole('button', { name: fr['menu.rowActions'] })[index]!);
+    const remindIn = (index: number) => {
+      menuOf(index);
+      const found = screen.queryByRole('menuitem', { name: fr['arrears.action.remind'] }) !== null;
+      fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
+      return found;
+    };
     render(<ArrearsScreen overview={arrearsAll} fmt={fmt} canRemind onRemind={() => {}} onOpen={() => {}} />);
-    const remindable = arrearsAll.rows.filter(r => r.reminderLevel !== 'pre-litigation').length;
-    expect(screen.getAllByText(fr['arrears.action.remind'])).toHaveLength(remindable);
+    const remindable = rows.findIndex(r => r.reminderLevel !== 'pre-litigation');
+    const blocked = rows.findIndex(r => r.reminderLevel === 'pre-litigation');
+    expect(remindIn(remindable)).toBe(true);
+    if (blocked >= 0) expect(remindIn(blocked)).toBe(false);
     cleanup();
     render(<ArrearsScreen overview={arrearsAll} fmt={fmt} canRemind={false} onRemind={() => {}} onOpen={() => {}} />);
-    expect(screen.queryByText(fr['arrears.action.remind'])).toBeNull();
+    expect(remindIn(remindable)).toBe(false);
   });
 });

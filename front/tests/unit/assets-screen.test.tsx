@@ -32,10 +32,10 @@ describe('AssetsScreen', () => {
     expect(screen.getByText(fr['assets.empty.title'])).toBeTruthy();
   });
 
-  it('ouvre une fiche au clic sur « Consulter »', () => {
+  it('ouvre une fiche au clic sur le nom de l’actif', () => {
     const onOpen = vi.fn();
     render(<AssetsScreen assets={assets} fmt={fmt} canCreate onOpenAsset={onOpen} onNew={() => {}} />);
-    fireEvent.click(screen.getAllByText(fr['assets.open'])[0]!);
+    fireEvent.click(screen.getByRole('button', { name: assets[0]!.name }));
     expect(onOpen).toHaveBeenCalledWith(assets[0]!.id);
   });
 });

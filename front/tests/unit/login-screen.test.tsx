@@ -34,7 +34,7 @@ describe('LoginScreen', () => {
     const props = renderScreen({ email: 'elea@pfo' });
     const button = screen.getByRole('button', { name: fr['login.action.requestCode'] }) as HTMLButtonElement;
     expect(button.disabled).toBe(true);
-    expect(screen.getByText(fr['login.email.invalid'])).toBeTruthy();
+    expect(screen.getByText(fr['form.email.invalid'])).toBeTruthy();
     expect(props.onRequestCode).not.toHaveBeenCalled();
   });
 

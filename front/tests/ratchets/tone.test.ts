@@ -16,6 +16,13 @@ const allowed = new Set<string>([
   'reconcile.explainer.3.body',
   'cheque.capture.body',
   'state.error.body',
+  // Définitions des indicateurs, reprises du dossier de transmission (E0.1, Q37).
+  'dashboard.def.occupancy',
+  'dashboard.def.unpaid',
+  'dashboard.def.vacancy',
+  'dashboard.def.budget',
+  // Modèle d'e-mail au locataire (E2.6), pas un libellé d'écran.
+  'cheque.return.template.body',
 ]);
 const robotic = [/\bSUA vous\b/i, /\bchaque modification\b/i, /\ble serveur\b/i, /\brègle \d/i, /\boffre technique\b/i, /\bs’écrase\b|\bs'écrase\b/i];
 

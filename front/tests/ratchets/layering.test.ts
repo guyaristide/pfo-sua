@@ -68,7 +68,7 @@ describe('habilitations', () => {
     const allowed = (p: string) => p.startsWith('shared/auth/') || p.startsWith('app/pages/') || p.startsWith('mocks/');
     const found = scan(
       sources.filter(f => !allowed(f.path)),
-      /PERMISSIONS\.|['"](asset|tenant|lease|invoice|collection|report|budget)\.(read|write|issue|record|validate)['"]/,
+      /PERMISSIONS\.|['"](asset|tenant|lease|invoice|collection|report|budget)\.(read|write|issue|record|validate|approve)['"]/,
     );
     expect(found, offenders(found, 'Passez par CanAccess ou usePermission (règle 14).')).toEqual([]);
   });

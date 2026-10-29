@@ -8,7 +8,7 @@ import { fr } from '../../src/i18n/fr';
 
 describe('invitation', () => {
   it('exige une adresse complète et au moins un actif quand le périmètre est restreint', () => {
-    expect(validateUserInvite({ ...emptyUserInviteForm, firstName: 'A', lastName: 'B', email: 'a@b', role: 'owner' }).email).toBe(fr['users.field.email.invalid']);
+    expect(validateUserInvite({ ...emptyUserInviteForm, firstName: 'A', lastName: 'B', email: 'a@b', role: 'owner' }).email).toBe(fr['form.email.invalid']);
     const errors = validateUserInvite({ firstName: 'A', lastName: 'B', email: 'a@b.ci', role: 'owner', scopeMode: 'some', scopeAssets: [] });
     expect(errors.scopeAssets).toBe(fr['users.field.scope.pick']);
     expect(toUserInvitation({ firstName: ' A ', lastName: 'B', email: 'A@B.CI', role: 'owner', scopeMode: 'all', scopeAssets: [] })).toEqual({
