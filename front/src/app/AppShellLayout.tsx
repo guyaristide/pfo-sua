@@ -74,7 +74,7 @@ export function AppShellLayout() {
       />
       <Sidebar
         entries={entries}
-        assets={assetsQuery.data ?? []}
+        assets={(assetsQuery.data ?? []).map(asset => ({ id: asset.id, name: asset.name, buildingCount: asset.buildingCount, lotCount: asset.lotCount, pendingData: asset.dataStatus === 'pending-data' }))}
         selectedAssetId={scope.assetId}
         onSelectAsset={scope.setAssetId}
         user={{ initials, name: session.user.firstName, roleLabel: t(roleLabelKey[session.user.role]) }}

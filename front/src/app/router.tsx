@@ -31,14 +31,35 @@ import { InvoicePage, InvoiceDeliveryPage } from './pages/billing/InvoicePages';
 import { CampaignPage, IssuePage } from './pages/billing/CampaignPages';
 import { ReportPage } from './pages/reports/ReportPage';
 import { BudgetDetailPage, ReestimatePage } from './pages/budget/BudgetPages';
-import { ChequesPage, RejectChequePage } from './pages/collections/ChequePages';
+import { ChequeDetailPage, ChequesPage, DepositPage, PrepareDepositPage, RejectChequePage } from './pages/collections/ChequePages';
 import { CapturesPage, ImportStatementPage } from './pages/collections/StatementPages';
 import { DocumentPage, UploadDocumentPage } from './pages/documents/DocumentPages';
 import { HelpPage } from './pages/HelpPage';
+import { OwnerGate } from './OwnerGate';
+import { OwnerShellLayout } from './OwnerShellLayout';
+import { OwnerLoginPage } from './pages/owner/OwnerLoginPage';
+import { OwnerDocumentsPage, OwnerHomePage, OwnerLotsPage, OwnerReportPage, OwnerReportsPage } from './pages/owner/OwnerPages';
 
 /** Lire avant d'éditer (règle 8) : `/assets/:assetId` est la fiche ; l'édition aura sa propre route. */
 export const router = createBrowserRouter([
   { path: '/login', Component: LoginPage },
+  // Espace propriétaire (parcours 3) : sa connexion, sa garde et sa coquille, distinctes de celles de l'équipe.
+  { path: '/owner/login', Component: OwnerLoginPage },
+  {
+    path: '/owner',
+    element: (
+      <OwnerGate>
+        <OwnerShellLayout />
+      </OwnerGate>
+    ),
+    children: [
+      { index: true, Component: OwnerHomePage },
+      { path: 'lots', Component: OwnerLotsPage },
+      { path: 'reports', Component: OwnerReportsPage },
+      { path: 'reports/:reportId', Component: OwnerReportPage },
+      { path: 'documents', Component: OwnerDocumentsPage },
+    ],
+  },
   {
     path: '/',
     element: (
@@ -63,6 +84,9 @@ export const router = createBrowserRouter([
       { path: 'collections/statements/:statementId/reconcile', Component: ReconcileStatementPage },
       { path: 'collections/cheques', Component: ChequesPage },
       { path: 'collections/cheques/new', Component: RecordChequePage },
+      { path: 'collections/cheques/deposit', Component: PrepareDepositPage },
+      { path: 'collections/cheques/deposits/:depositId', Component: DepositPage },
+      { path: 'collections/cheques/:chequeId', Component: ChequeDetailPage },
       { path: 'collections/cheques/:chequeId/reject', Component: RejectChequePage },
       { path: 'collections/statements/import', Component: ImportStatementPage },
       { path: 'collections/statements/:statementId/captures', Component: CapturesPage },

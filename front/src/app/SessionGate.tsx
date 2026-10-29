@@ -20,5 +20,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
     }
     return <ErrorState reference={error.reference} {...(error.userMessage ? { userMessage: error.userMessage } : {})} onRetry={() => void query.refetch()} />;
   }
+  // Un propriétaire n'entre pas dans l'espace de l'équipe : il retrouve le sien.
+  if (query.data.user.role === 'owner') return <Navigate to="/owner" replace />;
   return <>{children}</>;
 }

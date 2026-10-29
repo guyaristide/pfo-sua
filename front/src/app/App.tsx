@@ -22,7 +22,9 @@ export function App() {
       sessionEvents.onLost(() => {
         queryClient.clear();
         const current = router.state.location;
-        void router.navigate('/login', { replace: true, state: { from: `${current.pathname}${current.search}`, reason: 'session-lost' } });
+        // L'espace propriétaire a sa propre connexion (E3.1).
+        const login = current.pathname.startsWith('/owner') ? '/owner/login' : '/login';
+        void router.navigate(login, { replace: true, state: { from: `${current.pathname}${current.search}`, reason: 'session-lost' } });
       }),
     [queryClient],
   );
