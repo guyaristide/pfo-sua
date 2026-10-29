@@ -12,6 +12,8 @@ import type {
   ReportDetail,
   ReportRow,
   ReportSection,
+  BankDeposit,
+  ChequeDetail,
 } from '@/services/contracts';
 import { assets } from './assets';
 import { tenantAccounts } from './tenants';
@@ -100,10 +102,38 @@ export const chequesAll: ChequeRow[] = [
   { id: 'chq-1', chequeNumber: '0045822', tenantId: 'tn-pharma', tenantName: 'Pharmacie du Centre', assetName: 'ITC', bank: 'BLCI', amount: 1_200_000, receivedOn: '2026-10-12', depositedOn: null, status: 'to-deposit', note: 'Coursier du jeudi' },
   { id: 'chq-2', chequeNumber: '0101230', tenantId: 'tn-lagune', tenantName: 'Lagune Audit et Conseil', assetName: 'ITC', bank: 'SGCI', amount: 2_760_000, receivedOn: '2026-10-14', depositedOn: null, status: 'to-deposit', note: 'Coursier du jeudi' },
   { id: 'chq-3', chequeNumber: '0088112', tenantId: 'tn-savane-d', tenantName: 'Savane Digital', assetName: 'ITC', bank: 'BOA', amount: 690_000, receivedOn: '2026-10-15', depositedOn: null, status: 'to-deposit', note: 'Coursier du jeudi' },
-  { id: 'chq-4', chequeNumber: '0690412', tenantId: 'tn-optique', tenantName: 'Optique Marcory', assetName: 'Boulevard Latrille', bank: 'Stanbic', amount: 780_000, receivedOn: '2026-10-07', depositedOn: '2026-10-09', status: 'late', note: 'Pas crédité depuis 7 jours' },
+  { id: 'chq-4', chequeNumber: '0690412', tenantId: 'tn-optique', tenantName: 'Optique Marcory', assetName: 'Boulevard Latrille', bank: 'Stanbic', amount: 780_000, receivedOn: '2026-10-07', depositedOn: '2026-10-09', status: 'late', note: 'Non repéré dans les relevés importés depuis 7 jours' },
   { id: 'chq-5', chequeNumber: '0072214', tenantId: 'tn-afrik', tenantName: 'Afrik Logistique', assetName: 'ITC', bank: 'SGCI', amount: 3_250_000, receivedOn: '2026-10-09', depositedOn: '2026-10-12', status: 'rejected', note: 'Provision insuffisante · relevé du 16.10' },
   { id: 'chq-6', chequeNumber: '0024102', tenantId: 'tn-lagune', tenantName: 'Lagune Audit et Conseil', assetName: 'ITC', bank: 'SGCI', amount: 2_400_000, receivedOn: '2026-09-01', depositedOn: '2026-09-03', status: 'collected', note: 'Rapproché le 09.10' },
   { id: 'chq-7', chequeNumber: '0310077', tenantId: 'tn-clinique', tenantName: 'Clinique Sainte-Anne', assetName: 'Badamier', bank: 'BOA', amount: 13_500_000, receivedOn: '2026-10-02', depositedOn: '2026-10-05', status: 'deposited', note: 'Crédit attendu' },
+];
+
+/** Fiche du chèque non repéré d'Optique Marcory (prototype 2E) : un crédit candidat, aucune démarche encore. */
+export const chequeDetailsAll: Record<string, Omit<ChequeDetail, 'cheque'>> = {
+  'chq-4': {
+    lotCode: 'BL-07',
+    slipName: 'bordereau-0690412.pdf',
+    daysSinceDeposit: null,
+    candidates: [{ statementId: 's-4', lineId: 'bl-17', statementLabel: 'Relevé mensuel BGFI · Boulevard Latrille · octobre', date: '2026-10-13', label: 'REM CHQ 069041', amount: 780_000, hint: 'Même montant, numéro tronqué sur le relevé', dismissed: false }],
+    followUps: [],
+  },
+};
+
+/** Remise précédente (E2.7) : le chèque de la Clinique, déposé le 05.10, crédit attendu. */
+export const depositsAll: BankDeposit[] = [
+  {
+    id: 'dep-1',
+    reference: 'R-2026-0418',
+    accountLabel: 'compte BOA · SCI Badamier',
+    assetName: 'Badamier',
+    plannedOn: '2026-10-05',
+    depositedOn: '2026-10-05',
+    creditExpectedBy: '2026-10-12',
+    status: 'deposited',
+    cheques: chequesAll.filter(c => c.id === 'chq-7'),
+    total: 13_500_000,
+    slips: { 'chq-7': { kind: 'received', name: 'bordereau-0310077.pdf' } },
+  },
 ];
 
 export const capturesBgfiOctober: CaptureLine[] = [

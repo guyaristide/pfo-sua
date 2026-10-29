@@ -1,4 +1,4 @@
-import type { AccountEvent, ScheduleRow, TenantAccount, TenantOption, TenantRow } from '@/services/contracts';
+import type { AccountEvent, LedgerEntry, ScheduleRow, TenantAccount, TenantOption, TenantRow } from '@/services/contracts';
 
 /**
  * Les locataires de tous les actifs, avec bail, échéancier et historique. C'est la source unique :
@@ -71,6 +71,27 @@ function schedule(seed: Seed): ScheduleRow[] {
   return rows;
 }
 
+/** Le compte (E1.6) : chaque échéance passée donne une facture émise le 20 du mois précédent, puis son règlement. */
+function ledger(seed: Seed, rows: ScheduleRow[]): LedgerEntry[] {
+  const entries: LedgerEntry[] = [];
+  const rent = seed.monthlyRent * 3;
+  const charges = seed.monthlyCharges * 3;
+  rows.forEach((row, index) => {
+    if (row.status === 'upcoming') return;
+    const [year, month] = row.date.split('-').map(Number) as [number, number];
+    const issued = month === 1 ? `${year - 1}-12-20` : `${year}-${String(month - 1).padStart(2, '0')}-20`;
+    const quarter = row.label.replace('Facture ', '');
+    const reference = `FA-${year}-${String(900 + index * 37 + seed.id.length).padStart(4, '0')}`;
+    entries.push({ id: `${row.id}-f`, date: issued, kind: 'invoice', label: row.label, reference, quarter, lines: [{ item: 'rent', amount: rent }, ...(charges > 0 ? [{ item: 'charges' as const, amount: charges }] : [])], amount: row.invoiced, by: 'Émise par Vincent C.', bankLabel: null, invoiceId: row.invoiceId });
+    if (row.collected > 0) {
+      const ratio = row.collected / row.invoiced;
+      const paidRent = Math.round(rent * ratio);
+      entries.push({ id: `${row.id}-e`, date: `${row.date.slice(0, 8)}0${Math.min(9, 2 + index)}`, kind: 'payment', label: 'Virement', reference: 'Relevé du mois', quarter, lines: [{ item: 'rent', amount: paidRent }, ...(charges > 0 ? [{ item: 'charges' as const, amount: row.collected - paidRent }] : [])], amount: row.collected, by: 'Imputé par Vincent C.', bankLabel: `VIREMENT RECU · ${seed.name.toUpperCase()}`, invoiceId: row.invoiceId });
+    }
+  });
+  return entries.sort((a, b) => a.date.localeCompare(b.date));
+}
+
 function history(seed: Seed): AccountEvent[] {
   const events: AccountEvent[] = [
     { id: `${seed.id}-h1`, date: '2026-09-22', kind: 'invoice', label: 'Facture T4 2026 déposée', amount: (seed.monthlyRent + seed.monthlyCharges) * 3 },
@@ -104,6 +125,7 @@ export const tenantAccounts: TenantAccount[] = seeds.map(seed => ({
   status: seed.status,
   reminderLevel: seed.reminderLevel,
   schedule: schedule(seed),
+  ledger: ledger(seed, schedule(seed)),
   history: history(seed),
 }));
 
@@ -115,6 +137,8 @@ export function toTenantOption(account: TenantAccount): TenantOption {
     name: account.name,
     lotCode: account.lotCodes[0] ?? '',
     assetName: account.assetName,
+    email: account.email,
+    payeeName: `SCI ${account.assetName}`,
     dueAmount: due,
     dueDetail: dueRows.length > 0 ? dueRows.join(', ') : 'À jour',
   };

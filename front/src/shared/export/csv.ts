@@ -1,3 +1,4 @@
+import { saveBlob } from './save-file';
 /**
  * Export tableur : CSV en UTF-8 avec BOM, séparateur point-virgule (Excel en français), une ligne d'en-tête.
  * Les écrans exportent ce qu'ils affichent, filtré comme à l'écran (règle 10).
@@ -19,15 +20,7 @@ export function toCsv<Row>(columns: CsvColumn<Row>[], rows: Row[]): string {
 }
 
 export function downloadCsv(filename: string, content: string): void {
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename.endsWith('.csv') ? filename : `${filename}.csv`;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
+  saveBlob(new Blob([content], { type: 'text/csv;charset=utf-8' }), filename.endsWith('.csv') ? filename : `${filename}.csv`);
 }
 
 export function exportCsv<Row>(filename: string, columns: CsvColumn<Row>[], rows: Row[]): void {

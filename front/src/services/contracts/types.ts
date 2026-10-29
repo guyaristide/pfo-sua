@@ -26,10 +26,14 @@ export interface CodeRequestResult {
   demoCode: string | null;
 }
 
+/** Brouillon en cours de création, actif renseigné, ou actif connu dont les données ne sont pas encore reprises. */
+export type AssetDataStatus = 'draft' | 'active' | 'pending-data';
+
 export interface AssetSummary {
   id: string;
   code: string;
   name: string;
+  dataStatus: AssetDataStatus;
   location: string;
   ownerName: string;
   buildingCount: number;
@@ -114,7 +118,25 @@ export interface AccountEvent {
   amount: number | null;
 }
 
-/** Le dossier d'un locataire : bail, échéancier, historique du compte. */
+/** Une opération du compte locataire (E1.6) : une facture, ou un règlement imputé, détaillé par rubrique. */
+export interface LedgerEntry {
+  id: string;
+  date: string;
+  kind: 'invoice' | 'payment';
+  label: string;
+  reference: string;
+  /** Trimestre de rattachement, ex. « T3 2026 ». */
+  quarter: string;
+  lines: { item: InvoiceItemKind; amount: number }[];
+  amount: number;
+  /** Qui a émis la facture ou imputé le règlement. */
+  by: string;
+  /** Ligne du relevé bancaire d'origine, pour un règlement. */
+  bankLabel: string | null;
+  invoiceId: string | null;
+}
+
+/** Le dossier d'un locataire : bail, échéancier, compte, historique. */
 export interface TenantAccount {
   id: string;
   name: string;
@@ -129,6 +151,7 @@ export interface TenantAccount {
   status: TenantStatus;
   reminderLevel: ReminderLevel;
   schedule: ScheduleRow[];
+  ledger: LedgerEntry[];
   history: AccountEvent[];
 }
 
@@ -270,13 +293,38 @@ export interface DashboardAssetRow {
   reportStatus: ReportStatus;
 }
 
+export type DashboardKpiKey = 'occupancy' | 'recovery' | 'unpaid' | 'pre-litigation' | 'collected' | 'cheques' | 'vacancy' | 'budget' | 'leases';
+
+/** Période du tableau de bord (E0.1) : comparée à la période équivalente précédente. */
+export type DashboardPeriodKind = 'today' | 'last-quarter' | 'year' | 'since-start' | 'custom';
+
+export interface DashboardPeriod {
+  kind: DashboardPeriodKind;
+  /** Bornes d'une période personnalisée, au format ISO. */
+  from: string | null;
+  to: string | null;
+}
+
+/** Un indicateur (Q37) : libellé, chiffre, évolution ; le détail s'ouvre au clic (E0.2). */
+export interface DashboardKpi {
+  key: DashboardKpiKey;
+  value: number;
+  unit: 'percent' | 'count' | 'money';
+  /** Période que nomme le libellé : « T3 », « septembre », « 2026 ». */
+  periodLabel: string;
+  /** Détail chiffré, ex. « 7 lots · 6,9 M FCFA de loyers perdus par mois ». */
+  detail: string;
+  /** Évolution par rapport à la période équivalente précédente. */
+  delta: string;
+  trend: 'good' | 'bad' | 'flat';
+  /** Au-delà du seuil d'alerte (impayés > 20 %, chèque en retard…). */
+  alert: boolean;
+}
+
 export interface DashboardSummary {
   asOf: string;
   period: { year: number; quarter: number };
-  vacancyRate: DashboardIndicator;
-  unpaidRate: DashboardIndicator;
-  preLitigationCount: DashboardIndicator;
-  budgetRealisationRate: DashboardIndicator & { asOfDate: string };
+  kpis: DashboardKpi[];
   tasks: DashboardTask[];
   deadlines: DashboardDeadline[];
   assets: DashboardAssetRow[];
@@ -286,6 +334,7 @@ export type InboxKind =
   | 'cheque-rejected'
   | 'cheque-late'
   | 'statement-to-reconcile'
+  | 'excluded-to-qualify'
   | 'bank-captures'
   | 'observation';
 
@@ -296,6 +345,8 @@ export interface CollectionInboxItem {
   detail: string;
   /** Relevé visé par le sujet, quand il y en a un : l'action ouvre son rapprochement. */
   statementId: string | null;
+  /** Chèque visé par le sujet, quand il y en a un : l'action ouvre sa fiche. */
+  chequeId: string | null;
 }
 
 export interface ChequeCounter {
@@ -513,6 +564,62 @@ export interface ChequeRow {
 }
 
 export type ChequeRejectReason = 'insufficient-funds' | 'signature' | 'amount' | 'expired' | 'other';
+
+/** Crédit d'un relevé importé qui pourrait être ce chèque (même montant, numéro proche). */
+export interface CandidateCredit {
+  statementId: string;
+  lineId: string;
+  statementLabel: string;
+  date: string;
+  label: string;
+  amount: number;
+  hint: string;
+  dismissed: boolean;
+}
+
+export interface ChequeFollowUp {
+  id: string;
+  date: string;
+  who: string;
+  reply: string;
+}
+
+export interface ChequeFollowUpInput {
+  date: string;
+  who: string;
+  reply: string;
+}
+
+/** La fiche d'un chèque déposé (E2.10) : où il en est, les crédits candidats, les démarches. */
+export interface ChequeDetail {
+  cheque: ChequeRow;
+  lotCode: string;
+  slipName: string | null;
+  daysSinceDeposit: number | null;
+  candidates: CandidateCredit[];
+  followUps: ChequeFollowUp[];
+}
+
+/** Au retour du coursier, un bordereau par chèque : reçu, ou manquant à réclamer à la banque (E2.7). */
+export type DepositSlip = { kind: 'received'; name: string } | { kind: 'missing' };
+
+export type BankDepositStatus = 'at-courier' | 'deposited';
+
+export interface BankDeposit {
+  id: string;
+  /** Référence de remise donnée par la banque, connue une fois le dépôt validé. */
+  reference: string | null;
+  accountLabel: string;
+  assetName: string;
+  plannedOn: string;
+  depositedOn: string | null;
+  /** Date limite à laquelle chaque chèque doit être repéré dans les relevés importés. */
+  creditExpectedBy: string;
+  status: BankDepositStatus;
+  cheques: ChequeRow[];
+  total: number;
+  slips: Record<string, DepositSlip>;
+}
 
 export interface CaptureLine {
   id: string;
@@ -741,18 +848,70 @@ export interface SettingsOverview {
   sections: SettingsSection[];
 }
 
+export type PaymentKind = 'transfer' | 'cheque' | 'cash' | 'other';
+
+/** Preuve du règlement, obligatoire pour imputer (E2.3) : reprise dans le dossier mensuel. */
+export interface PaymentProof {
+  kind: 'cheque-photos' | 'cash-slip' | 'transfer-notice' | 'bank-capture' | 'file';
+  name: string;
+  /** D'où vient la preuve : jointe à la réception du chèque, reçue par e-mail, ajoutée à la main. */
+  source: 'reception' | 'email' | 'upload';
+}
+
+export type InvoiceItemKind = 'rent' | 'charges' | 'sign' | 'parking' | 'deposit' | 'penalties' | 'advance';
+
+/** Une facture ouverte d'un locataire, telle qu'elle se ventile pendant le rapprochement. */
+export interface OpenInvoice {
+  id: string;
+  tenantId: string;
+  item: InvoiceItemKind;
+  label: string;
+  reference: string;
+  /** Période antérieure (impayé) ou trimestre en cours : les plus anciennes s'imputent d'abord (Q17). */
+  period: 'prior' | 'current';
+  due: number;
+}
+
+/** Un locataire du compte, avec ses factures ouvertes : la base des propositions et des ventilations. */
+export interface StatementTenant {
+  id: string;
+  name: string;
+  lotCode: string;
+  invoices: OpenInvoice[];
+}
+
+export type ExclusionReason = 'tenant' | 'internal-transfer' | 'off-asset' | 'bank-fees' | 'refund' | 'ignore' | 'other';
+
+/** Qualification d'une ligne écartée (E2.4) : motif obligatoire pour « ignorer » et « autre ». */
+export interface ExcludedQualification {
+  reason: ExclusionReason;
+  note: string | null;
+}
+
 export interface ReconciliationLine {
   id: string;
   date: string;
   label: string;
   amount: number;
   state: ReconciliationLineState;
+  paymentKind: PaymentKind;
+  tenantId: string | null;
   tenantName: string | null;
   lotCode: string | null;
   invoiceLabel: string | null;
   dueAmount: number | null;
   /** Explication de la proposition (ou de l'absence de proposition), écrite pour la personne qui lit. */
   hint: string | null;
+  /** Preuve déjà jointe (chèque : photos et bordereau enregistrés à la réception). */
+  proof: PaymentProof | null;
+  /** Preuve disponible en un geste : avis reçu par e-mail, bordereau scanné à la réception. */
+  availableProof: PaymentProof | null;
+  /** Ventilation annoncée par le locataire (avis de virement), par facture. */
+  notice: { label: string; amounts: Record<string, number> } | null;
+  /** Crédit interne (chèque émis par la SCI et rejeté) : pas un règlement de locataire. */
+  internal: boolean;
+  /** Qualification d'une ligne déjà écartée ; `null` tant qu'elle reste à qualifier. */
+  exclusion: ExcludedQualification | null;
 }
 
 export interface StatementChecks {
@@ -771,6 +930,47 @@ export interface PreviousStatement {
   status: StatementStatus;
 }
 
+export type MonthlyFileStatus = 'submitted' | 'approved' | 'sent-to-accounting' | 'returned';
+
+/** Le dossier mensuel du compte (Q31) : versionné, soumis au gestionnaire de patrimoine après validation (Q20). */
+export interface MonthlyFile {
+  version: number;
+  status: MonthlyFileStatus;
+  validatedAt: string;
+  validatedBy: string;
+  submittedTo: string;
+  approvedAt: string | null;
+  approvedBy: string | null;
+  sentAt: string | null;
+  comment: string | null;
+  collectedAmount: number;
+  imputedCount: number;
+  excludedCount: number;
+  ignoredCount: number;
+  /** Lignes réimputées par rapport à la version précédente (E2.11) ; 0 pour la première version. */
+  changes: number;
+}
+
+export type StatementEventKind = 'validated' | 'approved' | 'sent' | 'observation' | 'returned' | 'reopened';
+
+/** Le journal d'un relevé : validations, approbations, observations, réouvertures. */
+export interface StatementEvent {
+  id: string;
+  date: string;
+  kind: StatementEventKind;
+  title: string;
+  detail: string;
+  by: string;
+}
+
+/** Observation du gestionnaire de patrimoine sur un rapprochement validé (E2.11). */
+export interface StatementObservation {
+  by: string;
+  date: string;
+  text: string;
+  lineId: string | null;
+}
+
 export interface StatementDetail {
   id: string;
   bank: string;
@@ -784,24 +984,47 @@ export interface StatementDetail {
   pageCount: number;
   checks: StatementChecks;
   previous: PreviousStatement[];
+  tenants: StatementTenant[];
   lines: ReconciliationLine[];
   /** Jours restants avant le cut-off comptable du dossier mensuel. */
   cutOffInDays: number;
+  file: MonthlyFile | null;
+  /** Versions précédentes du dossier mensuel, la plus récente d'abord. */
+  fileVersions: MonthlyFile[];
+  journal: StatementEvent[];
+  observation: StatementObservation | null;
+  /** Le CRG du trimestre est signé : plus de réouverture possible. */
+  reportSigned: boolean;
 }
 
-export type ReconciliationAction = 'confirm' | 'exclude';
+export type AllocationKind = 'invoice' | 'advance' | 'deposit' | 'penalties';
 
-export interface ReconciliationDecision {
-  lineId: string;
-  action: ReconciliationAction;
+/** Une part d'un règlement : vers une facture ouverte, ou hors facture (réglé d'avance, dépôt, pénalités). */
+export interface Allocation {
+  kind: AllocationKind;
+  tenantId: string;
+  invoiceId: string | null;
+  amount: number;
 }
+
+/** Part qui ne revient pas au compte du locataire (honoraires PFO…) : motif obligatoire, reprise au dossier. */
+export interface OffAccountPart {
+  amount: number;
+  reason: string;
+}
+
+export type ReconciliationDecision =
+  | { lineId: string; action: 'impute'; tenantId: string; allocations: Allocation[]; offAccount: OffAccountPart | null; proof: PaymentProof }
+  | { lineId: string; action: 'exclude'; qualification: ExcludedQualification };
 
 export interface ReconciliationResult {
   statementId: string;
   validatedAt: string;
   matchedCount: number;
   excludedCount: number;
+  ignoredCount: number;
   collectedAmount: number;
+  file: MonthlyFile;
 }
 
 export interface TenantOption {
@@ -809,6 +1032,9 @@ export interface TenantOption {
   name: string;
   lotCode: string;
   assetName: string;
+  email: string;
+  /** Bénéficiaire attendu sur un chèque : la SCI propriétaire de l'actif (E2.6). */
+  payeeName: string;
   dueAmount: number;
   dueDetail: string;
 }
@@ -816,10 +1042,32 @@ export interface TenantOption {
 export interface ChequeInput {
   tenantId: string;
   amount: number;
+  /** Montant en toutes lettres tel que lu sur le chèque : doit concorder avec le montant en chiffres. */
+  amountInWords: string;
   bank: string;
   chequeNumber: string;
   payee: string;
   receivedOn: string;
+  /** Le tireur a signé : un chèque non signé ne peut pas être remis. */
+  signed: boolean;
+}
+
+/** Contrôles bloquants d'un chèque (E2.6) : chiffres et lettres, bénéficiaire = la SCI, signature. */
+export type ChequeCheckIssue = 'amount-mismatch' | 'payee-missing' | 'payee-wrong' | 'unsigned';
+
+export interface ChequeReturnInput {
+  cheque: ChequeInput;
+  issues: ChequeCheckIssue[];
+  /** Demande de nouveau règlement envoyée au locataire, photo du chèque jointe. */
+  message: { to: string; subject: string; body: string };
+}
+
+export interface ChequeReturnRecord {
+  chequeNumber: string;
+  tenantName: string;
+  amount: number;
+  sentTo: string;
+  sentAt: string;
 }
 
 export interface ChequeRecord {
@@ -831,4 +1079,125 @@ export interface ChequeRecord {
   allocationDetail: string;
   depositPlannedOn: string;
   depositAccountLabel: string;
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// Espace propriétaire (parcours 3) : un espace distinct, les seuls actifs de la SCI, des documents validés.
+// ---------------------------------------------------------------------------------------------------------
+
+export interface OwnerContact {
+  name: string;
+  role: string;
+  phone: string;
+  email: string;
+}
+
+export interface OwnerProfile {
+  personName: string;
+  email: string;
+  sciName: string;
+  assetName: string;
+  assetDescription: string;
+  /** « Vos interlocuteurs chez PFO » (E3.2). */
+  contacts: OwnerContact[];
+  /** Compte de la SCI qui reçoit le reversement, masqué. */
+  payoutAccount: string | null;
+  /** Nouvel actif sans compte-rendu : date prévue du premier (E3.2, état). */
+  firstReportExpected: string | null;
+}
+
+export type AgingBucket = 'under-30' | '30-90' | 'over-90';
+
+export interface OwnerAging {
+  bucket: AgingBucket;
+  amount: number;
+  tenantCount: number;
+}
+
+export interface OwnerAmountLine {
+  label: string;
+  amount: number;
+}
+
+/** Un compte-rendu validé et signé, tel que le propriétaire le lit (E3.3). */
+export interface OwnerReport {
+  id: string;
+  quarter: number;
+  year: number;
+  periodStart: string;
+  periodEnd: string;
+  signedOn: string;
+  invoiced: number;
+  collected: number;
+  unpaid: number;
+  /** Solde reversé à la SCI. */
+  payout: number;
+  unpaidDetail: string;
+  byItem: OwnerAmountLine[];
+  byType: OwnerAmountLine[];
+  aging: OwnerAging[];
+  adjustments: string;
+  charges: OwnerAmountLine[];
+  fees: OwnerAmountLine[];
+  payoutLines: OwnerAmountLine[];
+  budgetLines: OwnerAmountLine[];
+  budgetRealised: number;
+  budgetRate: number;
+  signatories: { role: string; signedBy: string }[];
+}
+
+export type OwnerReportSummary = Pick<OwnerReport, 'id' | 'quarter' | 'year' | 'periodStart' | 'periodEnd' | 'signedOn' | 'invoiced' | 'collected' | 'unpaid' | 'payout' | 'aging' | 'unpaidDetail'>;
+
+export type OwnerLotStatus = 'occupied' | 'unpaid' | 'vacant' | 'signed';
+
+export interface OwnerLot {
+  code: string;
+  type: string;
+  area: number;
+  building: string;
+  tenantName: string | null;
+  since: string | null;
+  quarterlyRent: number | null;
+  status: OwnerLotStatus;
+}
+
+export interface OwnerDocument {
+  id: string;
+  name: string;
+  detail: string;
+  fileName: string;
+}
+
+export interface OwnerDocumentGroup {
+  label: string;
+  documents: OwnerDocument[];
+}
+
+/** L'accueil du propriétaire (E3.2) : chiffres arrêtés au dernier compte-rendu validé et au point des impayés. */
+export interface OwnerHome {
+  profile: OwnerProfile;
+  /** Date d'arrêté des chiffres et ce dont ils sont tirés. */
+  asOf: string | null;
+  sources: string | null;
+  reports: OwnerReportSummary[];
+  buildings: { key: string; name: string; lots: number; occupied: number }[];
+  vacantLots: Pick<OwnerLot, 'code' | 'type' | 'area' | 'since'>[];
+  lotCount: number;
+  occupiedCount: number;
+  signedCount: number;
+  debtorCount: number;
+  riskCount: number;
+  upcoming: { date: string; title: string; detail: string }[];
+}
+
+export interface OwnerAccessInfo {
+  email: string;
+  personName: string;
+  sciName: string;
+  activated: boolean;
+}
+
+export interface OwnerFile {
+  fileName: string;
+  blob: Blob;
 }

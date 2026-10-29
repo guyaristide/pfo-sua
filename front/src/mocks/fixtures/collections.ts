@@ -9,13 +9,15 @@ export const collectionsAll: CollectionsOverview = {
       title: 'Afrik Logistique · chèque n° 0072214 · 3 250 000',
       detail: 'Refusé par la banque (provision insuffisante) · relevé journalier SGCI du 16.10',
       statementId: null,
+      chequeId: 'chq-5',
     },
     {
       id: 'in-2',
       kind: 'cheque-late',
       title: 'Optique Marcory · chèque n° 0690412 · 780 000',
-      detail: 'Remis en banque le 09.10 · toujours pas crédité 7 jours après',
+      detail: 'Remis en banque le 09.10 · non repéré dans les relevés importés depuis 7 jours',
       statementId: null,
+      chequeId: 'chq-4',
     },
     {
       id: 'in-3',
@@ -23,6 +25,15 @@ export const collectionsAll: CollectionsOverview = {
       title: 'SGCI · ITC · septembre 2026',
       detail: 'Relevé mensuel reçu de la comptabilité · 24 lignes de crédit',
       statementId: 's-1',
+      chequeId: null,
+    },
+    {
+      id: 'in-3b',
+      kind: 'excluded-to-qualify',
+      title: 'SGCI · ITC · septembre 2026',
+      detail: '1 ligne écartée à qualifier avant la validation du rapprochement',
+      statementId: 's-1',
+      chequeId: null,
     },
     {
       id: 'in-4',
@@ -30,6 +41,7 @@ export const collectionsAll: CollectionsOverview = {
       title: 'BGFI · PFO Immobilier · crédits du 1er au 13 octobre',
       detail: 'E-mail du 13.10 · 6 crédits pour plusieurs actifs',
       statementId: 's-6',
+      chequeId: null,
     },
     {
       id: 'in-5',
@@ -37,12 +49,13 @@ export const collectionsAll: CollectionsOverview = {
       title: 'Stanbic · Les Trois Jardins · septembre 2026',
       detail: 'Eléma signale une ligne du 18.09 imputée au mauvais locataire',
       statementId: 's-2',
+      chequeId: null,
     },
   ],
   cheques: {
     toDeposit: { count: 3, amount: 4_650_000, note: 'coursier jeudi' },
     deposited: { count: 1, note: 'Suivi pendant 5 jours après le dépôt' },
-    late: { count: 1, note: 'Optique Marcory · 7 jours sans crédit' },
+    late: { count: 1, note: 'Optique Marcory · non repéré depuis 7 jours' },
     rejected: { count: 1, note: 'Signalé par la banque · à traiter' },
   },
   statements: [

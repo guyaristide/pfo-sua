@@ -9,7 +9,8 @@ export const PERMISSIONS = {
   LEASE_WRITE: 'lease.write',
   INVOICE_ISSUE: 'invoice.issue',
   COLLECTION_RECORD: 'collection.record',
-  COLLECTION_VALIDATE: 'collection.validate',
+  /** Approuve ou renvoie le dossier mensuel après validation du rapprochement (Q20, gestionnaire de patrimoine). */
+  COLLECTION_APPROVE: 'collection.approve',
   REPORT_VALIDATE: 'report.validate',
   BUDGET_VALIDATE: 'budget.validate',
   ADMIN: 'admin',

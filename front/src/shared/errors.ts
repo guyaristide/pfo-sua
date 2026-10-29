@@ -12,6 +12,8 @@ export type AppErrorKind =
   | 'business'
   | 'unexpected';
 
+import { t } from '@/i18n/t';
+
 export class AppError extends Error {
   readonly kind: AppErrorKind;
   /** Référence courte à dicter au support ; le détail technique est au journal. */
@@ -35,4 +37,10 @@ export class AppError extends Error {
     if (error instanceof AppError) return error;
     return new AppError('unexpected', { cause: error });
   }
+}
+
+/** Le texte à montrer pour une erreur : notre message s'il existe, sinon la phrase générique avec la référence. */
+export function errorMessage(error: unknown): string {
+  const appError = AppError.from(error);
+  return appError.userMessage ?? t('state.error.body', { reference: appError.reference });
 }

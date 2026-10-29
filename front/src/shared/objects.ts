@@ -12,8 +12,10 @@ export interface ObjectDefinition {
 }
 
 export const objects = {
-  dashboard: { icon: 'dashboard', color: 'var(--primary-600)', labelKey: 'nav.dashboard' },
+  dashboard: { icon: 'dashboard', color: 'var(--secondary-700)', labelKey: 'nav.dashboard' },
   asset: { icon: 'building', color: 'var(--primary-600)', labelKey: 'nav.assets' },
+  tenant: { icon: 'user', color: 'var(--tertiary-700)', labelKey: 'tenant.object' },
+  cheque: { icon: 'payments', color: 'var(--success-700)', labelKey: 'cheques.title' },
   invoice: { icon: 'invoice', color: 'var(--tertiary-600)', labelKey: 'nav.billing' },
   collection: { icon: 'payments', color: 'var(--success-600)', labelKey: 'nav.collections' },
   arrears: { icon: 'bell', color: 'var(--danger-600)', labelKey: 'nav.arrears' },

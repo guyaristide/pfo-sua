@@ -13,6 +13,7 @@ export const statementStatus = {
   validated: { labelKey: 'status.statement.validated', tone: 'success' },
   'validated-with-observation': { labelKey: 'status.statement.validatedWithObservation', tone: 'warning' },
   'captures-to-process': { labelKey: 'status.statement.capturesToProcess', tone: 'warning' },
+  reopened: { labelKey: 'status.statement.reopened', tone: 'warning' },
 } as const satisfies Record<string, StatusDefinition>;
 export type StatementStatus = keyof typeof statementStatus;
 
@@ -71,12 +72,27 @@ export const reconciliationLineState = {
 } as const satisfies Record<string, StatusDefinition>;
 export type ReconciliationLineState = keyof typeof reconciliationLineState;
 
+/** Le dossier mensuel après validation (Q20) : soumis, validé par le gestionnaire de patrimoine, envoyé, renvoyé. */
+export const monthlyFileStatus = {
+  submitted: { labelKey: 'status.file.submitted', tone: 'info' },
+  approved: { labelKey: 'status.file.approved', tone: 'success' },
+  'sent-to-accounting': { labelKey: 'status.file.sentToAccounting', tone: 'success' },
+  returned: { labelKey: 'status.file.returned', tone: 'warning' },
+} as const satisfies Record<string, StatusDefinition>;
+export type MonthlyFileStatus = keyof typeof monthlyFileStatus;
+
 export const userStatus = {
   active: { labelKey: 'status.user.active', tone: 'success' },
   invited: { labelKey: 'status.user.invited', tone: 'info' },
   disabled: { labelKey: 'status.user.disabled', tone: 'neutral' },
 } as const satisfies Record<string, StatusDefinition>;
 export type UserStatus = keyof typeof userStatus;
+
+export const assetDataStatus = {
+  active: { labelKey: 'status.asset.active', tone: 'success' },
+  draft: { labelKey: 'status.asset.draft', tone: 'neutral' },
+  'pending-data': { labelKey: 'status.asset.pending-data', tone: 'neutral' },
+} as const satisfies Record<string, StatusDefinition>;
 
 export const lotStatus = {
   occupied: { labelKey: 'status.lot.occupied', tone: 'success' },
@@ -106,10 +122,32 @@ export const chequeStatus = {
 } as const satisfies Record<string, StatusDefinition>;
 export type ChequeStatusKey = keyof typeof chequeStatus;
 
+/** Bordereau d'un chèque remis en banque (E2.7). */
+export const depositSlipStatus = {
+  pending: { labelKey: 'deposit.slip.pending', tone: 'neutral' },
+  received: { labelKey: 'deposit.slip.receivedShort', tone: 'success' },
+  missing: { labelKey: 'deposit.slip.missingShort', tone: 'warning' },
+} as const satisfies Record<string, StatusDefinition>;
+
+/** Remise en banque (E2.7). */
+export const depositStatus = {
+  'at-courier': { labelKey: 'deposit.status.atCourier', tone: 'warning' },
+  deposited: { labelKey: 'deposit.status.deposited', tone: 'success' },
+} as const satisfies Record<string, StatusDefinition>;
+
+/** Lot vu par le propriétaire (E3.2, état locatif). */
+export const ownerLotStatus = {
+  occupied: { labelKey: 'owner.lot.occupied', tone: 'success' },
+  unpaid: { labelKey: 'owner.lot.unpaid', tone: 'danger' },
+  vacant: { labelKey: 'owner.lot.vacant', tone: 'neutral' },
+  signed: { labelKey: 'owner.lot.signed', tone: 'info' },
+} as const satisfies Record<string, StatusDefinition>;
+
 export const inboxKindTone: Record<string, Tone> = {
   'cheque-rejected': 'danger',
   'cheque-late': 'danger',
   'statement-to-reconcile': 'warning',
+  'excluded-to-qualify': 'warning',
   'bank-captures': 'warning',
   observation: 'warning',
 };

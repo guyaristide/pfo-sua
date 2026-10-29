@@ -55,9 +55,22 @@ import type {
   TenantOption,
   UserInvitation,
   UserRow,
+  BankDeposit,
+  OwnerAccessInfo,
+  OwnerDocumentGroup,
+  OwnerHome,
+  OwnerLot,
+  OwnerReport,
+  OwnerReportSummary,
+  ChequeDetail,
+  ChequeFollowUpInput,
+  DepositSlip,
+  ChequeReturnInput,
+  ChequeReturnRecord,
 } from '../contracts';
 import { HttpClient } from './http-client';
 import { sessionStore } from './session-store';
+import { AppError } from '@/shared/errors';
 
 /**
  * Implémentation HTTP des contrats. Les chemins ci-dessous sont le contrat d'API attendu du backend.
@@ -109,17 +122,65 @@ export function createHttpServices(baseUrl: string): Services {
       importRows: (assetId, rows: TenantImportRow[]) => client.post<TenantImportResult>(`/assets/${encodeURIComponent(assetId)}/tenants/import`, { rows }),
     },
     dashboard: {
-      getSummary: assetId => client.get<DashboardSummary>(`/dashboard/summary${scope(assetId)}`),
+      getSummary: (assetId, period) => {
+        const params = new URLSearchParams({ period: period.kind });
+        if (assetId) params.set('assetId', assetId);
+        if (period.from) params.set('from', period.from);
+        if (period.to) params.set('to', period.to);
+        return client.get<DashboardSummary>(`/dashboard/summary?${params.toString()}`);
+      },
+    },
+    ownerAuth: {
+      getAccess: email => client.get<OwnerAccessInfo>(`/owner/access?email=${encodeURIComponent(email)}`),
+      activate: async (email, password) => {
+        const { token } = await client.post<{ token: string }>('/owner/activate', { email, password });
+        sessionStore.setToken(token);
+      },
+      signIn: async (email, password) => {
+        const { token } = await client.post<{ token: string }>('/owner/sign-in', { email, password });
+        sessionStore.setToken(token);
+      },
+      requestLink: email => client.post<{ expiresInMinutes: number }>('/owner/links', { email }),
+      openLink: async email => {
+        const { token } = await client.post<{ token: string }>('/owner/links/open', { email });
+        sessionStore.setToken(token);
+      },
+      requestReset: email => client.post<void>('/owner/password-reset', { email }),
+    },
+    owner: {
+      getHome: () => client.get<OwnerHome>('/owner/home'),
+      listReports: () => client.get<OwnerReportSummary[]>('/owner/reports'),
+      getReport: id => client.get<OwnerReport>(`/owner/reports/${encodeURIComponent(id)}`),
+      listLots: () => client.get<OwnerLot[]>('/owner/lots'),
+      listDocuments: () => client.get<OwnerDocumentGroup[]>('/owner/documents'),
+      download: async id => {
+        const token = sessionStore.getToken();
+        const response = await fetch(`${baseUrl}/owner/documents/${encodeURIComponent(id)}/file`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+        if (!response.ok) throw new AppError(response.status === 401 ? 'unauthorized' : 'unexpected');
+        const name = /filename="([^"]+)"/.exec(response.headers.get('Content-Disposition') ?? '')?.[1];
+        return { fileName: name ?? `${id}.pdf`, blob: await response.blob() };
+      },
     },
     collections: {
       getOverview: assetId => client.get<CollectionsOverview>(`/collections/overview${scope(assetId)}`),
       getStatement: id => client.get<StatementDetail>(`/collections/statements/${encodeURIComponent(id)}`),
       validateReconciliation: (id, decisions: ReconciliationDecision[]) =>
         client.post<ReconciliationResult>(`/collections/statements/${encodeURIComponent(id)}/validate`, { decisions }),
+      approveMonthlyFile: id => client.post<StatementDetail>(`/collections/statements/${encodeURIComponent(id)}/file/approve`, {}),
+      reopenReconciliation: (id, reason) => client.post<StatementDetail>(`/collections/statements/${encodeURIComponent(id)}/reopen`, { reason }),
+      getCheque: id => client.get<ChequeDetail>(`/collections/cheques/${encodeURIComponent(id)}`),
+      matchChequeCredit: (id, statementId, lineId) => client.post<ChequeDetail>(`/collections/cheques/${encodeURIComponent(id)}/match`, { statementId, lineId }),
+      dismissChequeCredit: (id, lineId) => client.post<ChequeDetail>(`/collections/cheques/${encodeURIComponent(id)}/dismiss`, { lineId }),
+      addChequeFollowUp: (id, input: ChequeFollowUpInput) => client.post<ChequeDetail>(`/collections/cheques/${encodeURIComponent(id)}/follow-ups`, input),
+      returnMonthlyFile: (id, comment) => client.post<StatementDetail>(`/collections/statements/${encodeURIComponent(id)}/file/return`, { comment }),
       listTenants: assetId => client.get<TenantOption[]>(`/tenants${scope(assetId)}`),
       recordCheque: (input: ChequeInput) => client.post<ChequeRecord>('/collections/cheques', input),
       listCheques: assetId => client.get<ChequeRow[]>(`/collections/cheques${scope(assetId)}`),
-      markChequesDeposited: (ids: string[]) => client.post<ChequeRow[]>('/collections/cheques/deposit', { ids }),
+      listDeposits: assetId => client.get<BankDeposit[]>(`/collections/deposits${scope(assetId)}`),
+      getDeposit: id => client.get<BankDeposit>(`/collections/deposits/${encodeURIComponent(id)}`),
+      prepareDeposit: (chequeIds: string[]) => client.post<BankDeposit>('/collections/deposits', { chequeIds }),
+      completeDeposit: (id, slips: Record<string, DepositSlip>) => client.post<BankDeposit>(`/collections/deposits/${encodeURIComponent(id)}/complete`, { slips }),
+      returnCheque: (input: ChequeReturnInput) => client.post<ChequeReturnRecord>('/collections/cheques/return', input),
       rejectCheque: (id, reason: ChequeRejectReason, note) => client.post<ChequeRow>(`/collections/cheques/${encodeURIComponent(id)}/reject`, { reason, note }),
       getCaptures: id => client.get<CaptureLine[]>(`/collections/statements/${encodeURIComponent(id)}/captures`),
       attachCaptures: (id, assignments: CaptureAssignment[]) => client.post<void>(`/collections/statements/${encodeURIComponent(id)}/captures`, { assignments }),

@@ -18,6 +18,8 @@ export function createServices(): Services {
   const latency = Number(import.meta.env.VITE_MOCK_LATENCY_MS ?? 250);
   const sessionKey = import.meta.env.VITE_MOCK_SESSION;
   const autoSignIn = import.meta.env.VITE_MOCK_AUTO_LOGIN === 'true';
-  const exposeLoginCode = import.meta.env.VITE_MOCK_EXPOSE_LOGIN_CODE === 'true';
+  // Le code simulé s'affiche en développement (serveur Vite) sauf refus explicite ; dans un build, il faut l'ouvrir (règle 39).
+  const exposeFlag = import.meta.env.VITE_MOCK_EXPOSE_LOGIN_CODE;
+  const exposeLoginCode = exposeFlag === 'true' || (import.meta.env.DEV && exposeFlag !== 'false');
   return createMockServices({ latencyMs: Number.isFinite(latency) ? latency : 250, autoSignIn, exposeLoginCode, ...(sessionKey ? { sessionKey } : {}) });
 }
