@@ -23,7 +23,11 @@ interface Position {
  * Menu d'actions d'une ligne (SLDS §7.7) : rendu au-dessus de la page, jamais coupé par un tableau qui
  * défile, ouvert vers le haut quand la place manque, piloté au clavier, action destructrice en rouge à la fin.
  */
-export function ActionMenu({ label, actions }: { label: string; actions: MenuAction[] }) {
+/**
+ * Menu d'actions (SLDS §7.7) : en portail, ouvert vers le haut si besoin, piloté au clavier. Avec `text`,
+ * le déclencheur est un bouton libellé (« Ajouter une ventilation ▾ ») ; sinon le ▾ de fin de ligne.
+ */
+export function ActionMenu({ label, actions, text }: { label: string; actions: MenuAction[]; text?: string | undefined }) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<Position | null>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -93,11 +97,11 @@ export function ActionMenu({ label, actions }: { label: string; actions: MenuAct
       <button
         ref={trigger}
         type="button"
-        className={open ? 'menu-trigger menu-trigger--open' : 'menu-trigger'}
+        className={text ? 'btn btn--neutral' : open ? 'menu-trigger menu-trigger--open' : 'menu-trigger'}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={label}
-        title={label}
+        aria-label={text ? undefined : label}
+        title={text ? undefined : label}
         onClick={() => (open ? close() : setOpen(true))}
         onKeyDown={event => {
           if (event.key === 'ArrowDown' && !open) {
@@ -106,6 +110,7 @@ export function ActionMenu({ label, actions }: { label: string; actions: MenuAct
           }
         }}
       >
+        {text}
         <Icon name="chevron-down" size={14} />
       </button>
       {open
@@ -118,8 +123,8 @@ export function ActionMenu({ label, actions }: { label: string; actions: MenuAct
               aria-label={label}
               onKeyDown={onKeyDown}
             >
-              {actions.map(action => (
-                <li key={action.label} role="none">
+              {actions.map((action, index) => (
+                <li key={action.label} role="none" className={action.danger && index > 0 && !actions[index - 1]?.danger ? 'menu-list__separated' : undefined}>
                   <button
                     type="button"
                     role="menuitem"

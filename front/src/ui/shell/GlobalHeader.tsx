@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import type { NavigationTarget, NotificationItem, SearchKind, SearchResult, SearchScope } from '@/services/contracts';
 import { GlobalSearch } from './GlobalSearch';
 import type { Formatters } from '@/shared/format/formatters';
 import { t } from '@/i18n/t';
-import { Button, Icon, IconButton } from '@/ui/primitives';
+import { Button, Icon, IconButton, useDismiss } from '@/ui/primitives';
 
 interface GlobalHeaderProps {
   userInitials: string;
@@ -31,21 +31,7 @@ interface GlobalHeaderProps {
 /** Un menu déroulant de l'en-tête : fermé au clic extérieur et à la touche Échap. */
 function HeaderMenu({ open, onClose, children }: { open: boolean; onClose: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!ref.current?.contains(event.target as Node)) onClose();
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [open, onClose]);
+  useDismiss(ref, open, onClose);
   return (
     <div className="profile" ref={ref}>
       {children}
@@ -84,7 +70,7 @@ export function GlobalHeader(props: GlobalHeaderProps) {
           </span>
           {menu === 'notifications' ? (
             <div className="profile__menu profile__menu--wide" role="menu" aria-label={t('header.notifications.panel')}>
-              <div className="profile__identity" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="profile__identity profile__identity--row">
                 <span className="profile__name">{t('header.notifications.panel')}</span>
                 {unread > 0 ? (
                   <Button variant="base" onClick={onMarkNotificationsRead}>

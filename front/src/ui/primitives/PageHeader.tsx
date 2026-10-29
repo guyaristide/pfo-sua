@@ -27,7 +27,6 @@ interface PageHeaderProps {
 
 /** En-tête de page SLDS §5 : icône d'objet, surtitre, titre, actions, champs en évidence. */
 export function PageHeader({ object, breadcrumbs, eyebrow, title, aside, actions, highlights }: PageHeaderProps) {
-  const definition = objects[object];
   return (
     <div>
       {breadcrumbs && breadcrumbs.length > 0 ? (
@@ -49,11 +48,10 @@ export function PageHeader({ object, breadcrumbs, eyebrow, title, aside, actions
           </ol>
         </nav>
       ) : null}
+      <div className={highlights && highlights.length > 0 ? 'page-header-card page-header-card--highlights' : 'page-header-card'}>
       <header className="page-header">
         <div className="page-header__object">
-          <span className="object-icon" style={{ background: definition.color }}>
-            <Icon name={definition.icon} size={18} />
-          </span>
+          <ObjectIcon object={object} />
           <div>
             {eyebrow ? <div className="page-header__eyebrow">{eyebrow}</div> : null}
             <h1 className="page-header__title">{title}</h1>
@@ -63,17 +61,26 @@ export function PageHeader({ object, breadcrumbs, eyebrow, title, aside, actions
         {actions ? <div className="page-header__actions">{actions}</div> : null}
       </header>
       {highlights && highlights.length > 0 ? (
-        <div className="page-header card" style={{ borderTop: 0, borderRadius: '0 0 4px 4px', padding: 0 }}>
-          <div className="page-header__highlights" style={{ borderTop: 0, width: '100%' }}>
-            {highlights.map(h => (
-              <div className="highlight" key={h.label}>
-                <div className="highlight__label">{h.label}</div>
-                <div className="highlight__value">{h.value}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <dl className="page-header__highlights">
+          {highlights.map(h => (
+            <div className="highlight" key={h.label}>
+              <dt className="highlight__label">{h.label}</dt>
+              <dd className="highlight__value">{h.value}</dd>
+            </div>
+          ))}
+        </dl>
       ) : null}
+      </div>
     </div>
+  );
+}
+
+/** Pictogramme d'objet (SLDS §3) : glyphe blanc sur carré coloré, couleur lue dans le registre unique. */
+export function ObjectIcon({ object, size = 18 }: { object: ObjectKey; size?: number }) {
+  const definition = objects[object];
+  return (
+    <span className={size < 16 ? "object-icon object-icon--sm" : "object-icon"} style={{ background: definition.color }} aria-hidden="true">
+      <Icon name={definition.icon} size={size} />
+    </span>
   );
 }

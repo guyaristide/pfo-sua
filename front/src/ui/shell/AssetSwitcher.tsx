@@ -1,12 +1,14 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { t } from '@/i18n/t';
-import { Icon } from '@/ui/primitives';
+import { Icon, useDismiss } from '@/ui/primitives';
 
 export interface AssetOption {
   id: string;
   name: string;
   buildingCount: number;
   lotCount: number;
+  /** Actif connu sans données reprises : proposé grisé, avec la mention « données à venir ». */
+  pendingData?: boolean;
 }
 
 interface AssetSwitcherProps {
@@ -27,28 +29,22 @@ export function AssetSwitcher({ assets, selectedAssetId, onSelect }: AssetSwitch
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuId = useId();
 
-  const options: { id: string; name: string; summary: string }[] = [
+  const options: { id: string; name: string; summary: string; pending?: boolean }[] = [
     {
       id: ALL,
       name: t('assetSwitcher.all'),
-      summary: t('assetSwitcher.summary', { assets: assets.length, lots: assets.reduce((sum, a) => sum + a.lotCount, 0) }),
+      summary: t('assetSwitcher.summary', { assets: assets.filter(a => !a.pendingData).length, lots: assets.reduce((sum, a) => sum + a.lotCount, 0) }),
     },
     ...assets.map(a => ({
       id: a.id,
       name: a.name,
-      summary: t('assetSwitcher.assetSummary', { buildings: a.buildingCount, lots: a.lotCount }),
+      summary: a.pendingData ? t('assetSwitcher.pendingData') : t('assetSwitcher.assetSummary', { buildings: a.buildingCount, lots: a.lotCount }),
+      pending: a.pendingData === true,
     })),
   ];
   const current = options.find(o => o.id === (selectedAssetId ?? ALL)) ?? options[0]!;
 
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-    };
-    document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
-  }, [open]);
+  useDismiss(rootRef, open, () => setOpen(false), { escape: false });
 
   useEffect(() => {
     if (!open) return;
@@ -122,7 +118,7 @@ export function AssetSwitcher({ assets, selectedAssetId, onSelect }: AssetSwitch
                 type="button"
                 role="menuitemradio"
                 aria-checked={checked}
-                className="asset-menu__item"
+                className={option.pending ? 'asset-menu__item asset-menu__item--pending' : 'asset-menu__item'}
                 onClick={() => pick(option.id)}
               >
                 <span className="asset-menu__text">

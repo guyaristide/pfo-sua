@@ -6,9 +6,11 @@ export interface ToastItem {
   tone: Tone;
   title: string;
   detail?: string | undefined;
+  /** Lien d'action (« Voir la remise ») : SLDS §7.9. */
+  action?: { label: string; onClick: () => void } | undefined;
 }
 
-const toastIcon: Record<Tone, IconName> = { neutral: 'help', info: 'help', success: 'check', warning: 'bell', danger: 'close', inverse: 'help' };
+const toastIcon: Record<Tone, IconName> = { neutral: 'info', info: 'info', success: 'success', warning: 'warning', danger: 'error', inverse: 'info' };
 
 interface ToastStackProps {
   toasts: ToastItem[];
@@ -22,13 +24,18 @@ export function ToastStack({ toasts, onDismiss, dismissLabel }: ToastStackProps)
   return (
     <div className="toasts">
       {toasts.map(toast => (
-        <div key={toast.id} className={`toast toast--${toast.tone}`} role={toast.tone === 'danger' ? 'alert' : 'status'} aria-live="polite">
-          <span className="toast__icon">
-            <Icon name={toastIcon[toast.tone]} size={14} />
+        <div key={toast.id} className={`toast toast--${toast.tone}`} role={toast.tone === 'danger' ? 'alert' : 'status'}>
+          <span className="toast__icon" aria-hidden="true">
+            <Icon name={toastIcon[toast.tone]} size={20} />
           </span>
           <span className="toast__body">
             <span className="toast__title">{toast.title}</span>
             {toast.detail ? <span className="toast__detail">{toast.detail}</span> : null}
+            {toast.action ? (
+              <button type="button" className="toast__action" onClick={toast.action.onClick}>
+                {toast.action.label}
+              </button>
+            ) : null}
           </span>
           <button type="button" className="toast__close" aria-label={dismissLabel} onClick={() => onDismiss(toast.id)}>
             <Icon name="close" size={14} />

@@ -1,8 +1,9 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useId, useRef, useState, type KeyboardEvent } from 'react';
 import { t } from '@/i18n/t';
 import { Icon, type IconName } from './Icon';
 import { TextInput } from './Field';
 import { useFormAttempted } from './Field';
+import { useDismiss } from './use-dismiss';
 
 export interface LookupOption {
   id: string;
@@ -40,14 +41,7 @@ export function Lookup({ id, options, value, onChange, placeholder, invalid, dis
   const results = options.filter(o => !needle || fold(`${o.label} ${o.meta ?? ''}`).includes(needle)).slice(0, MAX_RESULTS);
   const selected = options.find(o => o.id === value);
 
-  useEffect(() => {
-    if (!open) return;
-    const onPointer = (event: PointerEvent) => {
-      if (root.current && !root.current.contains(event.target as Node)) setOpen(false);
-    };
-    document.addEventListener('pointerdown', onPointer);
-    return () => document.removeEventListener('pointerdown', onPointer);
-  }, [open]);
+  useDismiss(root, open, () => setOpen(false), { escape: false });
 
   const pick = (option: LookupOption) => {
     onChange(option.id);

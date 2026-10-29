@@ -33,6 +33,8 @@ interface FormPageProps {
   onCancel: () => void;
   onSubmit: () => void;
   saveLabel?: string;
+  /** Un geste destructeur (rejet, suppression) se valide en rouge (SLDS §7.3). */
+  saveVariant?: 'brand' | 'destructive';
 }
 
 function goTo(id: string) {
@@ -46,7 +48,7 @@ function goTo(id: string) {
  * Page de saisie (règle 9, SLDS §6) : en-tête, contenu, pied fixe avec l'état du brouillon, le bouton
  * « N erreurs » qui ouvre le résumé et renvoie à chaque champ, et les actions.
  */
-export function FormPage({ object, breadcrumbs, eyebrow, title, children, errorCount, issues, submitError, submitting, onCancel, onSubmit, saveLabel }: FormPageProps) {
+export function FormPage({ object, breadcrumbs, eyebrow, title, children, errorCount, issues, submitError, submitting, onCancel, onSubmit, saveLabel, saveVariant = 'brand' }: FormPageProps) {
   const [attempted, setAttempted] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [summaryOpen, setSummaryOpen] = useState(false);
@@ -111,7 +113,7 @@ export function FormPage({ object, breadcrumbs, eyebrow, title, children, errorC
             <Button variant="neutral" onClick={onCancel}>
               {t('settings.action.cancel')}
             </Button>
-            <Button variant="brand" type="submit" disabled={submitting}>
+            <Button variant={saveVariant} type="submit" disabled={submitting}>
               {saveLabel ?? t('settings.action.save')}
             </Button>
           </div>

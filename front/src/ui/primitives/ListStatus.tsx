@@ -6,10 +6,10 @@ import { Button } from './Button';
 interface ListStatusProps {
   /** Effectif de la liste filtrée, toujours affiché à côté des sommes (règle 10). */
   count: number;
-  extra?: ReactNode;
+  extra?: ReactNode | undefined;
   search: string;
   onSearch: (value: string) => void;
-  filters?: ReactNode;
+  filters?: ReactNode | undefined;
 }
 
 /** Ligne d'état d'une vue de liste (SLDS §4) : effectif, filtres en pastilles, recherche dans la liste. */
@@ -48,16 +48,16 @@ export function ShowMore({ hidden, onClick }: { hidden: number; onClick: () => v
 }
 
 interface FilterPillsProps<Key extends string> {
-  options: { key: Key; label: string }[];
+  options: { key: Key; label: string; count?: number | undefined }[];
   value: Key;
   onChange: (key: Key) => void;
   label: string;
 }
 
-/** Filtres en pastilles rectangulaires, un seul actif (SLDS §4). */
+/** Contrôle segmenté (SLDS §7.3) : un choix actif en couleur de marque, l'effectif de chaque choix lisible sans cliquer (règle 10). */
 export function FilterPills<Key extends string>({ options, value, onChange, label }: FilterPillsProps<Key>) {
   return (
-    <div role="group" aria-label={label} style={{ display: 'contents' }}>
+    <div role="group" aria-label={label} className="segmented">
       {options.map(option => (
         <button
           key={option.key}
@@ -67,6 +67,7 @@ export function FilterPills<Key extends string>({ options, value, onChange, labe
           onClick={() => onChange(option.key)}
         >
           {option.label}
+          {option.count !== undefined ? <span className="filter-pill__count">{option.count}</span> : null}
         </button>
       ))}
     </div>

@@ -7,6 +7,9 @@
   --text-base: 13px;
   --text-small: 12px;
   --text-micro: 11px;
+  /* Alias historique : le petit texte SLDS fait 12 px. */
+  --text-sm: var(--text-small);
+  --title-modal: 20px;
   --line-base: 1.5;
   --title-page: 20px;
   --title-section: 16px;
@@ -15,13 +18,20 @@
   --color-brand: var(--primary-600);
   --color-brand-hover: var(--primary-700);
   --color-brand-pressed: var(--primary-800);
-  --focus-ring: 0 0 3px var(--primary-400);
+  --focus-ring: 0 0 3px var(--color-brand);
 
   --page-bg: var(--background-subtle);
   --card-bg: var(--surface-default);
   --card-border: var(--border-default);
   --card-radius: 4px;
-  --card-shadow: 0 2px 2px rgba(0, 0, 0, 0.06);
+  --card-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
+  --shadow-dropdown: 0 2px 3px rgba(0, 0, 0, 0.16);
+  --shadow-modal: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-docked: 0 -2px 4px rgba(0, 0, 0, 0.08);
+  --modal-backdrop: rgba(8, 7, 7, 0.6);
+  --label-color: var(--neutral-700);
+  --placeholder-color: var(--neutral-600);
+  --critical-600: #7a1414;
 
   --control-height: 32px;
   --control-radius: 4px;
@@ -34,6 +44,9 @@
   --button-neutral-border: var(--neutral-300);
   --button-neutral-text: var(--color-brand);
   --button-neutral-hover: var(--neutral-50);
+  --button-filled-disabled-bg: var(--neutral-300);
+  --button-outline-disabled-text: #aeaeae;
+  --button-success-bg: var(--success-600);
 
   --badge-radius: 15rem;
   --badge-font: 12px;

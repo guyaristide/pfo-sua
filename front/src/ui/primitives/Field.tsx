@@ -16,6 +16,7 @@ import {
 } from 'react';
 import { t } from '@/i18n/t';
 import { Icon } from './Icon';
+import { useDismiss } from './use-dismiss';
 
 /**
  * Les erreurs d'un formulaire n'apparaissent qu'après une tentative d'envoi (ou de passage à l'étape
@@ -151,14 +152,7 @@ export function SelectInput({
   const typed = useRef({ text: '', at: 0 });
   const listId = useId();
 
-  useEffect(() => {
-    if (!open) return;
-    const onPointer = (event: PointerEvent) => {
-      if (root.current && !root.current.contains(event.target as Node)) setOpen(false);
-    };
-    document.addEventListener('pointerdown', onPointer);
-    return () => document.removeEventListener('pointerdown', onPointer);
-  }, [open]);
+  useDismiss(root, open, () => setOpen(false), { escape: false });
 
   useEffect(() => {
     if (!open || !list.current) return;

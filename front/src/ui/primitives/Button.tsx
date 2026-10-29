@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
 
-export type ButtonVariant = 'brand' | 'neutral' | 'outline' | 'destructive' | 'base';
+export type ButtonVariant = 'brand' | 'neutral' | 'outline' | 'destructive' | 'success' | 'base';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;

@@ -1,12 +1,11 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { SearchKind, SearchResult, SearchScope } from '@/services/contracts';
-import { objects } from '@/shared/objects';
+import { searchKindObject } from '@/shared/labels';
 import { t } from '@/i18n/t';
-import { Icon, SelectInput } from '@/ui/primitives';
+import { Icon, ObjectIcon, SelectInput, useDismiss } from '@/ui/primitives';
 
 const MAX_RESULTS = 5;
 const scopes: SearchScope[] = ['all', 'asset', 'tenant', 'invoice', 'document'];
-const kindObject = { asset: 'asset', tenant: 'asset', invoice: 'invoice', document: 'document' } as const;
 const fold = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 /** Surligne les caractères trouvés dans un libellé. */
@@ -47,21 +46,7 @@ export function GlobalSearch({ query, scope, results, recent, onQueryChange, onS
   const typing = query.trim().length > 0;
   const shown = (typing ? results : recent).slice(0, MAX_RESULTS);
 
-  useEffect(() => {
-    if (!open) return;
-    const onPointer = (event: PointerEvent) => {
-      if (root.current && !root.current.contains(event.target as Node)) setOpen(false);
-    };
-    const onKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('pointerdown', onPointer);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('pointerdown', onPointer);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
+  useDismiss(root, open, () => setOpen(false));
 
   const choose = (result: SearchResult) => {
     setOpen(false);
@@ -127,7 +112,6 @@ export function GlobalSearch({ query, scope, results, recent, onQueryChange, onS
           <span className="search-panel__title">{typing ? t('header.search.results') : t('header.search.recent')}</span>
           <ul id={listId} role="listbox" aria-label={t('header.search.results')}>
             {shown.map((result, index) => {
-              const definition = objects[kindObject[result.kind]];
               return (
                 <li
                   key={`${result.kind}-${result.id}`}
@@ -141,9 +125,7 @@ export function GlobalSearch({ query, scope, results, recent, onQueryChange, onS
                   }}
                   onPointerEnter={() => setActive(index)}
                 >
-                  <span className="object-icon object-icon--sm" style={{ background: definition.color }}>
-                    <Icon name={definition.icon} size={12} />
-                  </span>
+                  <ObjectIcon object={searchKindObject[result.kind]} size={12} />
                   <span className="search-item__text">
                     <strong>
                       <Highlight text={result.title} query={query} />
