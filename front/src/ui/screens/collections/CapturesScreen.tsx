@@ -26,7 +26,7 @@ export function CapturesScreen({ statementLabel, lines, assets, tenants, fmt, as
   const remaining = lines.length - complete.length;
   const columns: Column<CaptureLine>[] = [
     { key: 'date', header: t('captures.col.date'), render: line => fmt.shortDate(line.date), width: '96px' },
-    { key: 'label', header: t('captures.col.label'), render: line => <span className="table__primary" style={{ color: 'var(--text-primary)' }}>{line.label}</span> },
+    { key: 'label', header: t('captures.col.label'), render: line => <span className="table__strong">{line.label}</span> },
     { key: 'amount', header: t('captures.col.amount'), numeric: true, render: line => fmt.moneyPlain(line.amount) },
     {
       key: 'asset',

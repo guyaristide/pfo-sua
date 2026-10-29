@@ -6,18 +6,13 @@ import { useListAssets } from '@/services/hooks/use-list-assets';
 import { useListBankAccounts } from '@/services/hooks/use-list-bank-accounts';
 import { useListTenants } from '@/services/hooks/use-list-tenants';
 import { useServices } from '@/services/service-context';
-import { AppError } from '@/shared/errors';
+import { errorMessage } from '@/shared/errors';
 import { t } from '@/i18n/t';
 import { CapturesScreen, type Assignments } from '@/ui/screens/collections/CapturesScreen';
 import { ImportStatementScreen, type ImportStatementForm } from '@/ui/screens/collections/ImportStatementScreen';
 import { QueryState } from '../../query-state';
 import { useFormatters } from '../../use-formatters';
 import { useToast } from '../../toast-context';
-
-const message = (error: unknown) => {
-  const appError = AppError.from(error);
-  return appError.userMessage ?? t('state.error.body', { reference: appError.reference });
-};
 
 export function CapturesPage() {
   const { statementId = '' } = useParams();
@@ -56,7 +51,7 @@ export function CapturesPage() {
                     })
                   }
                   submitting={mutation.isPending}
-                  submitError={mutation.isError ? message(mutation.error) : undefined}
+                  submitError={mutation.isError ? errorMessage(mutation.error) : undefined}
                   onBack={back}
                 />
               )}
@@ -95,7 +90,7 @@ export function ImportStatementPage() {
             )
           }
           submitting={mutation.isPending}
-          submitError={mutation.isError ? message(mutation.error) : undefined}
+          submitError={mutation.isError ? errorMessage(mutation.error) : undefined}
           onBack={() => void navigate('/collections')}
         />
       )}

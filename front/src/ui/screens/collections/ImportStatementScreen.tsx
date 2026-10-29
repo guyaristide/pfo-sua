@@ -1,6 +1,6 @@
 import type { BankAccount } from '@/services/contracts';
 import { t } from '@/i18n/t';
-import { Button, Card, DockedFooter, Field, Icon, PageHeader, SelectInput, TextInput } from '@/ui/primitives';
+import { Button, Card, DockedFooter, Field, FileDrop, FormActions, PageHeader, SelectInput, TextInput } from '@/ui/primitives';
 
 export interface ImportStatementForm {
   bankAccountId: string;
@@ -42,25 +42,13 @@ export function ImportStatementScreen({ accounts, form, onChange, sampleAvailabl
             <TextInput id="imp-period" type="month" value={form.period} onChange={e => onChange({ ...form, period: e.target.value })} />
           </Field>
         </div>
-        <label className="dropzone" style={{ marginTop: 16 }}>
-          <Icon name="upload" size={28} />
-          <span>{form.fileName ? t('document.upload.chosen', { name: form.fileName }) : t('importStatement.drop')}</span>
-          <input
-            type="file"
-            accept=".pdf,.csv"
-            className="visually-hidden"
-            onChange={event => {
-              const file = event.target.files?.[0];
-              if (file) onChange({ ...form, fileName: file.name });
-            }}
-          />
-        </label>
+        <FileDrop id="imp-file" label={t('importStatement.drop')} accept=".pdf,.csv" fileName={form.fileName ? t('document.upload.chosen', { name: form.fileName }) : null} onFile={file => onChange({ ...form, fileName: file.name })} />
         {sampleAvailable ? (
-          <div style={{ marginTop: 12 }}>
+          <FormActions>
             <Button variant="neutral" onClick={() => onChange({ ...form, fileName: 'releve-exemple.pdf', bankAccountId: form.bankAccountId || (accounts.find(a => a.holder === 'sci')?.id ?? ''), period: form.period || '2026-10' })}>
               {t('importStatement.sample')}
             </Button>
-          </div>
+          </FormActions>
         ) : null}
       </Card>
       <DockedFooter
